@@ -1,0 +1,161 @@
+/* =====================================================================
+   style.css — EduQuest custom styles
+   Tailwind (utility classes) + DaisyUI (components) do most of the work.
+   This file adds: the DaisyUI color theme, Kahoot answer buttons,
+   the quest map, the heatmap, and small animations.
+   ===================================================================== */
+
+/* ---------- DaisyUI theme (colors are OKLCH: lightness chroma hue) ---------- */
+[data-theme="eduquest"] {
+  color-scheme: light;
+  --p: 50% 0.22 284;      /* brand purple  #5B3FD9 */
+  --pc: 100% 0 0;
+  --s: 83% 0.17 84;       /* star yellow   #FBBF24 */
+  --sc: 28% 0.06 70;
+  --a: 70% 0.14 182;      /* teal accent */
+  --ac: 22% 0.05 182;
+  --n: 26% 0.07 285;      /* deep indigo */
+  --nc: 98% 0 0;
+  --b1: 100% 0 0;
+  --b2: 97.5% 0.008 290;
+  --b3: 92% 0.015 290;
+  --bc: 24% 0.04 280;
+  --in: 60% 0.17 250;  --inc: 100% 0 0;
+  --su: 58% 0.16 150;  --suc: 100% 0 0;
+  --wa: 80% 0.16 80;   --wac: 25% 0.05 70;
+  --er: 58% 0.21 20;   --erc: 100% 0 0;
+  --rounded-box: 1.25rem;
+  --rounded-btn: 0.9rem;
+  --rounded-badge: 1.9rem;
+  --animation-btn: 0.2s;
+  --animation-input: 0.2s;
+  --btn-focus-scale: 0.97;
+  --border-btn: 1px;
+  --tab-border: 1px;
+  --tab-radius: 0.6rem;
+}
+
+[x-cloak] { display: none !important; }
+html { scroll-behavior: smooth; }
+body { background: #F6F4FD; -webkit-tap-highlight-color: transparent; }
+
+.font-display { font-family: 'Fredoka', 'Nunito', system-ui, sans-serif; }
+
+/* ---------- Landing ---------- */
+.landing {
+  background:
+    radial-gradient(circle at 10% 10%, #E9E4FF 0, transparent 40%),
+    radial-gradient(circle at 90% 20%, #FFF3C4 0, transparent 35%),
+    radial-gradient(circle at 50% 100%, #DDF7EE 0, transparent 45%),
+    #F6F4FD;
+}
+.role-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: .5rem;
+  padding: 1.5rem; border-radius: 1.5rem; color: #fff;
+  box-shadow: 0 8px 0 rgba(0,0,0,.15), 0 16px 30px rgba(46,26,110,.18);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.role-card:hover { transform: translateY(-3px); }
+.role-card:active { transform: translateY(4px); box-shadow: 0 3px 0 rgba(0,0,0,.15); }
+
+/* ---------- Buttons with a chunky "game" press effect ---------- */
+.btn-3d { box-shadow: 0 5px 0 rgba(0,0,0,.2); transition: transform .08s ease, box-shadow .08s ease; }
+.btn-3d:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.2); }
+
+/* ---------- Kahoot-style answer buttons ---------- */
+.ans {
+  position: relative; display: flex; align-items: center; gap: .75rem;
+  min-height: 84px; padding: .9rem 1rem; border-radius: 1rem;
+  font-weight: 800; font-size: 1rem; line-height: 1.25; text-align: left;
+  box-shadow: 0 6px 0 rgba(0,0,0,.25);
+  transition: transform .08s ease, opacity .2s ease, box-shadow .08s ease;
+}
+.ans:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,.25); }
+.ans:disabled { cursor: default; }
+.ans svg { flex-shrink: 0; }
+@media (min-width: 640px) { .ans { min-height: 110px; font-size: 1.15rem; } }
+
+.ans-red    { background: #D61F3B; color: #fff; }
+.ans-blue   { background: #1368CE; color: #fff; }
+.ans-yellow { background: #F5B800; color: #2B1D00; }
+.ans-green  { background: #1E7B0A; color: #fff; }
+
+/* After answering: correct answer glows, others fade (with ✓ / ✗ marks so
+   meaning never depends on color alone) */
+.ans.is-correct { outline: 4px solid #fff; outline-offset: 2px; animation: pop .35s ease; }
+.ans.is-correct::after,
+.ans.is-chosen-wrong::after {
+  position: absolute; top: -10px; right: -10px; width: 30px; height: 30px; border-radius: 999px;
+  display: grid; place-items: center; font-size: 16px; font-weight: 900; background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25);
+}
+.ans.is-correct::after { content: '✓'; color: #15803D; }
+.ans.is-chosen-wrong { opacity: .8; }
+.ans.is-chosen-wrong::after { content: '✗'; color: #B45309; }
+.ans.is-dim { opacity: .3; }
+.ans.is-picked { outline: 4px solid #fff; outline-offset: 2px; }
+
+/* ---------- Challenge screen ---------- */
+.play-bg {
+  background: radial-gradient(circle at 15% 0%, #7C5CFF 0, transparent 45%),
+              radial-gradient(circle at 100% 100%, #2E1A6E 0, transparent 55%),
+              #46289F;
+}
+.timer-fill { transition: width .1s linear, background-color .3s ease; }
+.feedback-panel { animation: slide-up .25s ease; }
+
+/* ---------- Quest map ---------- */
+.quest-map { position: relative; }
+.quest-map svg.path { position: absolute; inset: 0; width: 100%; pointer-events: none; }
+.quest-step { position: relative; height: 112px; }
+.quest-node {
+  position: absolute; top: 16px; width: 80px; height: 80px; border-radius: 999px;
+  display: grid; place-items: center; color: #fff; background: var(--node, #5B3FD9);
+  box-shadow: 0 6px 0 rgba(0,0,0,.2); transition: transform .1s ease;
+}
+.quest-node:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,.2); }
+.quest-left  .quest-node { left: calc(20% - 40px); }
+.quest-right .quest-node { left: calc(80% - 40px); }
+.quest-label { position: absolute; top: 50%; transform: translateY(-50%); }
+.quest-left  .quest-label { left: calc(20% + 50px); right: 0; }
+.quest-right .quest-label { right: calc(20% + 50px); left: 0; text-align: right; }
+.quest-node.is-locked { background: #CBD5E1; color: #64748B; box-shadow: 0 6px 0 #94A3B8; }
+.quest-node.is-completed { border: 4px solid #FBBF24; }
+.quest-node.is-available::before {
+  content: ''; position: absolute; inset: -8px; border-radius: 999px;
+  border: 4px solid var(--node, #5B3FD9); opacity: .5; animation: ring 1.6s ease-out infinite;
+}
+.quest-trophy { left: calc(50% - 40px) !important; background: #FBBF24; color: #5B3FD9; }
+
+/* ---------- Mastery heatmap ---------- */
+.heatmap { border-collapse: separate; border-spacing: 4px; }
+.heatmap th, .heatmap td { padding: 0; }
+.heatmap thead th { position: sticky; top: 0; background: #fff; z-index: 2; }
+.heatmap .sticky-col { position: sticky; left: 0; background: #fff; z-index: 3; }
+.heatmap thead .sticky-col { z-index: 4; }
+.heat-cell {
+  width: 52px; height: 38px; border-radius: 8px; display: grid; place-items: center;
+  font-weight: 800; font-size: .85rem;
+}
+.heat-high { background: #16A34A; color: #fff; }
+.heat-mid  { background: #FCD34D; color: #3B2A00; }
+.heat-low  { background: #E11D48; color: #fff; }
+.heat-none { background: #F1F5F9; color: #94A3B8; }
+
+/* ---------- Small animations ---------- */
+@keyframes pop { 0% { transform: scale(.85); } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
+@keyframes slide-up { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes ring { from { transform: scale(.9); opacity: .6; } to { transform: scale(1.25); opacity: 0; } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes bounce-in { 0% { transform: scale(0); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@keyframes count { 0% { transform: scale(1.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+.anim-pop { animation: pop .35s ease; }
+.anim-float { animation: float 2.4s ease-in-out infinite; }
+.anim-bounce-in { animation: bounce-in .45s cubic-bezier(.2,.9,.3,1.4) both; }
+.anim-count { animation: count .8s ease; }
+.anim-slide-up { animation: slide-up .3s ease both; }
+
+/* Respect the "reduce motion" setting */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

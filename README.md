@@ -1,0 +1,94 @@
+# EduQuest — Prototype
+
+> **Learning that feels like a game, not a task.**
+> A clickable prototype by **EduTech Innovators** (Silverio · Aglugub · Rey · Villegas · Perez) for CCINOV8.
+
+EduQuest is a gamified, mobile-first learning platform for Filipino elementary students. This prototype mixes **Canvas LMS** structure (subjects, modules, assignments, teacher dashboards) with **Kahoot** energy (timed questions, colored answer shapes, speed points, streaks, leaderboards, podium). It adds the feature that sets EduQuest apart: **instant feedback with an explanation after every answer.**
+
+Sample content: **Grade 4 · Mathematics, Science, English** (10 quests, 90 questions). Competency codes are written in a MATATAG-like style and labeled **sample**. They are not official DepEd codes.
+
+---
+
+## Run it locally
+
+No install, no build step. Pick one:
+
+1. **Double-click `index.html`.** It opens in your browser.
+2. *(Optional)* Run a local server from this folder: `python -m http.server 8000`, then open <http://localhost:8000>.
+
+You need an internet connection the first time, because the libraries, fonts, and avatars load from CDNs.
+
+## Deploy to GitHub Pages
+
+1. Create a new **public** repository on GitHub, for example `eduquest-prototype`.
+2. Upload every file in this folder **with the same structure** (`index.html`, `css/`, `js/`, `README.md`):
+   - **On the website:** *Add file → Upload files*, drag the files and folders in, then *Commit changes*.
+   - **With git:**
+     ```bash
+     git init
+     git add .
+     git commit -m "EduQuest prototype"
+     git branch -M main
+     git remote add origin https://github.com/<your-username>/eduquest-prototype.git
+     git push -u origin main
+     ```
+3. In the repository, open **Settings → Pages**.
+4. Under **Build and deployment**, set **Source: Deploy from a branch**, **Branch: `main`**, folder **`/ (root)`**, then click **Save**.
+5. Wait about 1–2 minutes and refresh. Your site appears at
+   `https://<your-username>.github.io/eduquest-prototype/`
+
+All paths are relative, so the site works inside the `/eduquest-prototype/` subfolder.
+
+---
+
+## What’s inside
+
+| Role | Screens |
+|---|---|
+| **Student** (mobile-first) | Home (avatar, level, XP, streak, badges, subject cards, teacher assignments) · Quest map · Lesson · Kahoot-style challenge with instant feedback · Results (stars, XP, badges, review mistakes, class leaderboard) · Badges · Join live game |
+| **Teacher** (Canvas-like) | Class dashboard (Lean Canvas key metrics, charts, sortable roster) · Mastery heatmap · Challenge library + assign with due date · Quiz builder · Host Live Game (PIN, lobby, bots, answer chart, top 5, podium) |
+| **Parent** | Weekly time chart · progress stats · subjects improving vs. needing help · recent badges · **daily screen-time limit** · download/delete child data (RA 10173) · plan info (parents only) |
+
+### Scoring and adaptive rules (see `js/quiz.js`)
+
+- **Points:** 500 for a correct answer + up to 500 speed bonus (shrinks over the 20 s timer) × **streak multiplier** (×1.0, ×1.1, … up to ×1.5).
+- **Stars:** 85%+ = 3 ⭐, 60%+ = 2 ⭐, otherwise 1 ⭐ (finishing always earns a star).
+- **XP:** 10 per correct answer + 5 per star + 25 the first time you finish a quest. 150 XP per level.
+- **Adaptive difficulty:** each challenge uses 6 of the quest’s 9 questions.
+  - Accuracy **≥ 80%** → next attempt uses more medium/hard questions (🚀 Level Up).
+  - Accuracy **< 50%** → the app suggests re-reading the lesson and serves easier questions (🌱 Warm-up).
+  - Otherwise, the difficulty stays the same (⭐ Balanced).
+
+### Child safety (from our business plan)
+
+Cartoon avatars (DiceBear) and nicknames only · no ads, no purchases shown to kids · break reminder at the parent’s limit · encouraging feedback for wrong answers (soft sound, 💡 instead of ❌) · DepEd and RA 10173 notice in the footer.
+
+---
+
+## Files (for teammates)
+
+```
+index.html        every screen (look for the big ===== comment headers)
+css/style.css     theme colors, answer buttons, quest map, heatmap, animations
+js/data.js        ALL content: subjects, quests, lessons, questions, badges, 20 fake classmates
+js/store.js       localStorage helpers, "Reset demo", the demo student's starting progress
+js/sound.js       generated beep sound effects (Web Audio API) + confetti helpers
+js/quiz.js        challenge engine: scoring, adaptive rules, badges
+js/dashboard.js   teacher + parent data and Chart.js charts
+js/live.js        Host Live Game, bots, BroadcastChannel two-tab play
+js/app.js         Alpine app: routing (#/student, #/teacher/…), screen time, assignments, quiz builder
+```
+
+**Common edits**
+
+- **Add or change a question:** in `js/data.js`, copy a line like
+  `Q('easy', 'Question?', ['A', 'B', 'C', 'D'], 1, 'Why B is right.')`
+  The `1` is the index of the correct choice (0 = first).
+- **Change timer or points:** constants at the top of `js/quiz.js` (and `js/live.js` for live games).
+- **Change colors:** the theme block at the top of `css/style.css`, and each subject’s `color` in `data.js`.
+
+**Libraries (all from CDNs):** Tailwind CSS (Play CDN) + DaisyUI · Alpine.js · Chart.js · canvas-confetti · Lucide icons · DiceBear avatars · Google Fonts (Fredoka, Nunito). Howler.js is not loaded because there are no audio files. Sounds are generated with the Web Audio API in `js/sound.js`. The browser console shows a “cdn.tailwindcss.com should not be used in production” warning. That is expected for a prototype.
+
+**Saved data:** everything is stored in the browser’s `localStorage` under keys starting with `eduquest.v1.`. Click **Reset demo** (footer, teacher sidebar, or Parent → Delete data) to restore the starting demo.
+
+**Two-tab live game:** both tabs must be in the **same browser**. It also works from a double-clicked file in Chrome/Edge, but the GitHub Pages URL is the most reliable.

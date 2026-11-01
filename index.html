@@ -1,0 +1,1382 @@
+<!doctype html>
+<html lang="en" data-theme="eduquest">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EduQuest — Learning that feels like a game</title>
+  <meta name="description" content="EduQuest prototype: a gamified learning platform for Filipino elementary students (Grade 4 sample content).">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%235B3FD9'/%3E%3Cpolygon points='32,9 34.2,14.9 40.6,15.2 35.6,19.2 37.3,25.3 32,21.8 26.7,25.3 28.4,19.2 23.4,15.2 29.8,14.9' fill='%23FBBF24'/%3E%3Cpath d='M12 32q10-4 19 1v19q-9-5-19-1z' fill='%23fff'/%3E%3Cpath d='M52 32q-10-4-19 1v19q9-5 19-1z' fill='%23E0DBFB'/%3E%3C/svg%3E">
+
+  <!-- Fonts: Fredoka (playful headings) + Nunito (friendly body text) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- DaisyUI components + Tailwind CSS (Play CDN, no build step) -->
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com/3.4.5"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Nunito', 'system-ui', 'sans-serif'],
+            display: ['Fredoka', 'Nunito', 'system-ui', 'sans-serif']
+          },
+          colors: { brand: { DEFAULT: '#5B3FD9', dark: '#46289F', light: '#EEEBFD' }, sun: '#FBBF24' }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Alpine.js runs after the page (and our scripts at the bottom) load -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</head>
+
+<body x-data="app()" class="min-h-screen font-sans text-base-content">
+
+<!-- ===================================================================
+     LANDING / ROLE PICKER
+     =================================================================== -->
+<template x-if="screen==='landing'">
+  <div class="landing min-h-screen" x-cloak>
+    <div class="max-w-5xl mx-auto w-full px-4 py-10 sm:py-16">
+      <div class="text-center">
+        <span class="inline-block anim-float" x-html="logo('w-20 h-20 drop-shadow-lg')"></span>
+        <h1 class="font-display text-5xl sm:text-6xl font-bold text-brand mt-3">EduQuest</h1>
+        <p class="text-lg sm:text-2xl mt-2 font-extrabold">Learning that feels like a game, not a task.</p>
+        <p class="text-sm text-slate-600 mt-2">Grade 4 prototype · Mathematics · Science · English · DepEd MATATAG-aligned sample content</p>
+      </div>
+
+      <h2 class="sr-only">Choose your role</h2>
+      <div class="grid sm:grid-cols-3 gap-4 mt-10">
+        <a href="#/student" class="role-card bg-gradient-to-br from-[#5B3FD9] to-[#7C5CFF]" @click="Sound.click()">
+          <span class="bg-white/20 rounded-2xl p-3"><i data-lucide="gamepad-2" class="w-8 h-8"></i></span>
+          <span class="font-display text-2xl font-bold">I’m a Student</span>
+          <span class="text-white/90 font-semibold">Play quests, earn XP, stars, and badges</span>
+        </a>
+        <a href="#/teacher" class="role-card bg-gradient-to-br from-[#0F766E] to-[#14B8A6]" @click="Sound.click()">
+          <span class="bg-white/20 rounded-2xl p-3"><i data-lucide="presentation" class="w-8 h-8"></i></span>
+          <span class="font-display text-2xl font-bold">I’m a Teacher</span>
+          <span class="text-white/90 font-semibold">Class dashboard, mastery heatmap, live games</span>
+        </a>
+        <a href="#/parent" class="role-card bg-gradient-to-br from-[#C2410C] to-[#F97316]" @click="Sound.click()">
+          <span class="bg-white/20 rounded-2xl p-3"><i data-lucide="heart-handshake" class="w-8 h-8"></i></span>
+          <span class="font-display text-2xl font-bold">I’m a Parent</span>
+          <span class="text-white/90 font-semibold">Progress, screen time, and privacy controls</span>
+        </a>
+      </div>
+
+      <!-- Child-safety promises from our business plan -->
+      <h2 class="font-display text-xl font-bold text-center mt-12">Safe by design 🛡️</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+        <div class="bg-white rounded-2xl p-4 flex gap-3 items-start shadow-sm">
+          <span class="text-brand"><i data-lucide="smile" class="w-6 h-6"></i></span>
+          <p class="text-sm"><b>Cartoon avatars &amp; nicknames only.</b> No real photos or personal data.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-4 flex gap-3 items-start shadow-sm">
+          <span class="text-brand"><i data-lucide="ban" class="w-6 h-6"></i></span>
+          <p class="text-sm"><b>No ads, no “buy coins.”</b> Kids never see purchase prompts.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-4 flex gap-3 items-start shadow-sm">
+          <span class="text-brand"><i data-lucide="alarm-clock" class="w-6 h-6"></i></span>
+          <p class="text-sm"><b>Break reminders.</b> Parents set a daily screen-time limit.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-4 flex gap-3 items-start shadow-sm">
+          <span class="text-brand"><i data-lucide="heart" class="w-6 h-6"></i></span>
+          <p class="text-sm"><b>Encouraging feedback.</b> Mistakes are explained, never shamed.</p>
+        </div>
+      </div>
+
+      <p class="text-center text-xs text-slate-600 mt-10">A prototype by <b>EduTech Innovators</b> — Silverio (CEO) · Aglugub (CTO) · Rey (CFO) · Villegas (PM) · Perez (BA)</p>
+    </div>
+  </div>
+</template>
+
+<!-- ===================================================================
+     STUDENT APP (mobile-first)
+     =================================================================== -->
+<template x-if="role==='student'">
+  <div class="min-h-screen" x-cloak>
+
+    <!-- Top bar -->
+    <header x-show="screen!=='student-play'" class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200">
+      <div class="max-w-3xl mx-auto px-4 h-14 flex items-center gap-2">
+        <a href="#/student" class="flex items-center gap-2 shrink-0">
+          <span x-html="logo('w-8 h-8')"></span>
+          <span class="font-display font-bold text-xl text-brand hidden min-[380px]:inline">EduQuest</span>
+        </a>
+        <div class="ml-auto flex items-center gap-1.5">
+          <span class="badge badge-lg bg-brand-light border-0 text-brand font-extrabold gap-1" title="Level">⭐ <span x-text="'Lv ' + level()"></span></span>
+          <span class="badge badge-lg bg-orange-100 border-0 text-orange-700 font-extrabold gap-1" title="Daily streak">🔥 <span x-text="streakCount()"></span></span>
+          <button class="btn btn-ghost btn-sm btn-square" @click="toggleSound()" :aria-label="settings.sound ? 'Mute sounds' : 'Turn sounds on'">
+            <span x-html="icon(settings.sound ? 'volume-2' : 'volume-x')"></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== CHALLENGE MODE (full screen, Kahoot-style) ===== -->
+    <template x-if="screen==='student-play' && quiz">
+      <div class="fixed inset-0 z-40 play-bg overflow-y-auto text-white">
+        <div class="max-w-3xl mx-auto min-h-full flex flex-col px-4 py-4">
+          <div class="flex items-center gap-3">
+            <button class="btn btn-circle btn-sm bg-white/15 border-0 text-white hover:bg-white/25" @click="quitChallenge()" aria-label="Quit challenge">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div class="min-w-0">
+              <p class="text-xs text-white/70 font-bold truncate" x-text="quiz.code"></p>
+              <p class="font-display font-bold truncate" x-text="quiz.title"></p>
+            </div>
+            <div class="ml-auto text-right shrink-0">
+              <p class="text-xs text-white/70 font-bold" x-text="'Question ' + (quiz.index + 1) + ' of ' + quiz.questions.length"></p>
+              <p class="font-display text-xl font-bold" x-text="fmt(quiz.score) + ' pts'"></p>
+            </div>
+          </div>
+
+          <!-- Get ready countdown -->
+          <template x-if="quiz.phase==='getready'">
+            <div class="flex-1 flex flex-col items-center justify-center text-center py-10">
+              <p class="font-display text-3xl font-bold">Get ready!</p>
+              <p class="mt-2 text-white/80 font-semibold" x-text="quiz.custom ? 'Teacher quiz' : (modeInfo(quiz.id).emoji + ' ' + Adaptive.LABELS[quiz.mode].name + ' mode')"></p>
+              <template x-for="n in [quiz.countdown]" :key="n">
+                <div class="mt-6 w-36 h-36 rounded-full bg-white text-brand grid place-items-center font-display text-7xl font-bold anim-count" x-text="n"></div>
+              </template>
+              <p class="mt-6 text-white/80 text-sm">20 seconds per question · faster answers = more points · streaks multiply!</p>
+            </div>
+          </template>
+
+          <!-- Question + answers + instant feedback -->
+          <template x-if="quiz.phase!=='getready'">
+            <div class="flex-1 flex flex-col mt-4">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 shrink-0 rounded-full bg-white text-brand grid place-items-center font-display text-xl font-bold" x-text="Math.ceil(quiz.timeLeft)"></div>
+                <div class="flex-1 h-3 rounded-full bg-white/20 overflow-hidden" role="progressbar" aria-label="Time left">
+                  <div class="h-full rounded-full timer-fill" :class="quiz.timeLeft <= 5 ? 'bg-rose-400' : 'bg-sun'" :style="`width:${quiz.timeLeft / QUIZ_TIME * 100}%`"></div>
+                </div>
+              </div>
+              <div class="flex flex-wrap gap-2 mt-3">
+                <span class="badge border-0 bg-white/15 text-white font-bold capitalize" x-text="currentQuestion().difficulty"></span>
+                <span x-show="quiz.streak >= 2" class="badge border-0 bg-orange-400 text-orange-950 font-extrabold anim-pop" x-text="'🔥 ' + quiz.streak + ' in a row · ×' + Scoring.multiplier(quiz.streak + 1).toFixed(1)"></span>
+              </div>
+
+              <div class="bg-white text-slate-900 rounded-3xl p-5 sm:p-7 mt-3 shadow-xl">
+                <p class="font-display text-xl sm:text-2xl font-semibold leading-snug" x-text="currentQuestion().question"></p>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3 mt-4">
+                <template x-for="(choice, i) in currentQuestion().choices" :key="i">
+                  <button class="ans" :class="[shapes[i].cls, quiz.phase==='feedback' ? (i===currentQuestion().answer ? 'is-correct' : (i===quiz.chosen ? 'is-chosen-wrong' : 'is-dim')) : '']"
+                          :disabled="quiz.phase!=='question'" @click="answer(i)" :aria-label="shapes[i].label + ': ' + choice">
+                    <span x-html="shapeSvg(i)"></span>
+                    <span x-text="choice"></span>
+                  </button>
+                </template>
+              </div>
+
+              <!-- INSTANT FEEDBACK: our key difference from Kahoot -->
+              <template x-if="quiz.phase==='feedback'">
+                <div class="feedback-panel mt-5 bg-white text-slate-900 rounded-3xl p-5 shadow-xl">
+                  <template x-if="quiz.answers[quiz.answers.length-1].isCorrect">
+                    <div class="flex items-center gap-3">
+                      <span class="text-4xl anim-bounce-in">✅</span>
+                      <div>
+                        <p class="font-display text-2xl font-bold text-green-700" x-text="quiz.message"></p>
+                        <p class="font-bold text-slate-700" x-text="'+' + fmt(quiz.lastPoints) + ' points' + (quiz.streak >= 2 ? ' · streak ×' + Scoring.multiplier(quiz.streak).toFixed(1) : '')"></p>
+                      </div>
+                    </div>
+                  </template>
+                  <template x-if="!quiz.answers[quiz.answers.length-1].isCorrect">
+                    <div>
+                      <div class="flex items-center gap-3">
+                        <span class="text-4xl anim-bounce-in">💡</span>
+                        <p class="font-display text-xl font-bold text-amber-700" x-text="quiz.message"></p>
+                      </div>
+                      <p class="mt-3 font-bold flex items-center gap-2 flex-wrap">
+                        The answer is:
+                        <span class="inline-flex items-center gap-2 rounded-xl px-3 py-1" :class="shapes[currentQuestion().answer].cls">
+                          <span x-html="shapeSvg(currentQuestion().answer, 'w-4 h-4')"></span>
+                          <span x-text="currentQuestion().choices[currentQuestion().answer]"></span>
+                        </span>
+                      </p>
+                    </div>
+                  </template>
+                  <div class="mt-3 bg-brand-light rounded-2xl p-3 text-sm sm:text-base">
+                    <p class="font-extrabold text-brand">Why?</p>
+                    <p x-text="currentQuestion().explain"></p>
+                  </div>
+                  <button class="btn btn-primary btn-lg btn-block mt-4 btn-3d text-lg" @click="Sound.click(); nextQuestion()">
+                    <span x-text="quiz.index + 1 < quiz.questions.length ? 'Next question' : 'See my results 🏁'"></span>
+                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                  </button>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+
+    <main class="max-w-3xl mx-auto px-4 pt-4 pb-6">
+
+      <!-- ===== STUDENT HOME ===== -->
+      <template x-if="screen==='student-home'">
+        <div class="space-y-6 anim-slide-up">
+          <!-- Profile / XP card -->
+          <section class="rounded-3xl p-5 text-white bg-gradient-to-br from-[#5B3FD9] to-[#7C5CFF] shadow-lg">
+            <div class="flex items-center gap-4">
+              <button @click="openAvatarModal()" class="relative shrink-0" aria-label="Change avatar and nickname">
+                <img :src="avatarUrl(student.avatar)" class="w-20 h-20 rounded-full bg-white/20 ring-4 ring-white/40" alt="Your cartoon avatar">
+                <span class="absolute -bottom-1 -right-1 bg-sun text-brand-dark rounded-full p-1.5 shadow"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></span>
+              </button>
+              <div class="min-w-0">
+                <p class="text-white/85 text-sm font-bold">Mabuhay! 👋</p>
+                <h1 class="font-display text-3xl font-bold truncate" x-text="student.nickname"></h1>
+                <p class="text-sm font-extrabold" x-text="'Level ' + level() + ' Explorer'"></p>
+              </div>
+            </div>
+            <div class="mt-4">
+              <div class="flex justify-between text-xs font-extrabold mb-1">
+                <span x-text="fmt(student.xp) + ' XP'"></span>
+                <span x-text="xpToNext() + ' XP to Level ' + (level() + 1)"></span>
+              </div>
+              <div class="h-3 rounded-full bg-white/25 overflow-hidden">
+                <div class="h-full bg-sun rounded-full transition-all duration-700" :style="`width:${levelProgress()}%`"></div>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2 mt-4 text-center">
+              <div class="bg-white/15 rounded-2xl py-2"><p class="text-2xl">🔥</p><p class="font-extrabold" x-text="streakCount() + '-day streak'"></p></div>
+              <div class="bg-white/15 rounded-2xl py-2"><p class="text-2xl">🏅</p><p class="font-extrabold" x-text="student.badges.length + ' badges'"></p></div>
+              <div class="bg-white/15 rounded-2xl py-2"><p class="text-2xl">⭐</p><p class="font-extrabold" x-text="totalStars() + ' stars'"></p></div>
+            </div>
+          </section>
+
+          <!-- Assignments from the teacher -->
+          <section x-show="myAssignments().length">
+            <h2 class="font-display text-xl font-bold mb-2">📌 From <span x-text="data.teacherName"></span></h2>
+            <div class="space-y-2">
+              <template x-for="a in myAssignments()" :key="a.id">
+                <a :href="'#/student/' + (a.quiz.custom ? 'play/' : 'lesson/') + a.quizId" class="flex items-center gap-3 bg-white rounded-2xl p-3 shadow-sm border border-slate-100 hover:border-brand">
+                  <span class="w-10 h-10 rounded-xl grid place-items-center text-xl" :style="`background:${a.subject.light}`" x-text="a.subject.emoji"></span>
+                  <div class="min-w-0 flex-1">
+                    <p class="font-extrabold truncate" x-text="a.quiz.title"></p>
+                    <p class="text-xs text-slate-600" x-text="'Due ' + shortDate(a.due) + ' · ' + a.subject.name"></p>
+                  </div>
+                  <span class="badge font-bold border-0" :class="a.done ? 'bg-green-100 text-green-800' : (a.overdue ? 'bg-amber-100 text-amber-800' : 'bg-brand-light text-brand')"
+                        x-text="a.done ? '✓ Done' : (a.overdue ? 'Still open' : 'To do')"></span>
+                </a>
+              </template>
+            </div>
+          </section>
+
+          <!-- Subject cards (Canvas-style course cards) -->
+          <section>
+            <h2 class="font-display text-xl font-bold mb-2">Your subjects</h2>
+            <div class="grid sm:grid-cols-2 gap-4">
+              <template x-for="s in data.subjects" :key="s.id">
+                <a :href="'#/student/subject/' + s.id" class="block rounded-3xl overflow-hidden bg-white shadow-sm border border-slate-100 hover:shadow-md transition" @click="Sound.click()">
+                  <div class="h-24 px-4 py-3 flex items-end justify-between text-white" :style="`background:${s.color}`">
+                    <div>
+                      <p class="text-xs uppercase font-extrabold tracking-wide text-white/90">Grade 4</p>
+                      <h3 class="font-display text-2xl font-bold" x-text="s.name"></h3>
+                    </div>
+                    <span class="text-4xl" x-text="s.emoji"></span>
+                  </div>
+                  <div class="p-4">
+                    <p class="text-sm text-slate-600" x-text="s.tagline"></p>
+                    <div class="flex items-center gap-2 mt-3">
+                      <div class="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                        <div class="h-full rounded-full" :style="`width:${subjectProgress(s).pct}%; background:${s.color}`"></div>
+                      </div>
+                      <span class="text-xs font-extrabold" x-text="subjectProgress(s).done + '/' + subjectProgress(s).total + ' quests'"></span>
+                    </div>
+                    <p class="text-sm font-bold mt-2" :style="`color:${s.color}`" x-text="(subjectProgress(s).done === subjectProgress(s).total ? '🏆 All done! Replay: ' : 'Next: ') + nextQuest(s).title"></p>
+                  </div>
+                </a>
+              </template>
+            </div>
+          </section>
+
+          <!-- Join live game -->
+          <a href="#/student/join" class="flex items-center gap-4 p-4 rounded-3xl bg-neutral text-neutral-content shadow-md">
+            <span class="bg-white/15 rounded-2xl p-3"><i data-lucide="radio" class="w-7 h-7"></i></span>
+            <div>
+              <p class="font-display text-lg font-bold">Join a live game</p>
+              <p class="text-sm text-white/80">Got a game PIN from your teacher?</p>
+            </div>
+            <i data-lucide="chevron-right" class="w-6 h-6 ml-auto"></i>
+          </a>
+
+          <!-- Badges preview -->
+          <section>
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="font-display text-xl font-bold">My badges</h2>
+              <a href="#/student/badges" class="text-sm font-bold text-brand">See all →</a>
+            </div>
+            <div class="flex gap-3 overflow-x-auto pb-2">
+              <template x-for="b in data.badges" :key="b.id">
+                <div class="shrink-0 w-24 bg-white rounded-2xl p-3 text-center shadow-sm border border-slate-100" :class="!hasBadge(b.id) && 'opacity-40 grayscale'">
+                  <p class="text-3xl" x-text="hasBadge(b.id) ? b.emoji : '🔒'"></p>
+                  <p class="text-xs font-extrabold mt-1 leading-tight" x-text="b.name"></p>
+                </div>
+              </template>
+            </div>
+          </section>
+        </div>
+      </template>
+
+      <!-- ===== QUEST MAP ===== -->
+      <template x-if="screen==='student-subject' && subject(param)">
+        <div x-data="{ s: subject(param) }" class="anim-slide-up">
+          <a href="#/student" class="btn btn-ghost btn-sm gap-1 -ml-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Home</a>
+          <div class="rounded-3xl p-5 text-white mt-2 shadow-md" :style="`background:${s.color}`">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs uppercase font-extrabold tracking-wide text-white/90">Grade 4 · Quest map</p>
+                <h1 class="font-display text-3xl font-bold" x-text="s.name"></h1>
+              </div>
+              <span class="text-5xl" x-text="s.emoji"></span>
+            </div>
+            <div class="flex items-center gap-2 mt-3">
+              <div class="flex-1 h-2.5 rounded-full bg-white/25 overflow-hidden"><div class="h-full rounded-full bg-sun" :style="`width:${subjectProgress(s).pct}%`"></div></div>
+              <span class="text-sm font-extrabold" x-text="subjectProgress(s).done + ' of ' + subjectProgress(s).total + ' done'"></span>
+            </div>
+          </div>
+
+          <div class="quest-map mt-4">
+            <!-- .camel keeps the capital B: HTML would otherwise lowercase "viewBox" -->
+            <svg class="path" x-bind:view-box.camel="`0 0 100 ${(s.quests.length + 1) * 112}`" preserveAspectRatio="none" :style="`height:${(s.quests.length + 1) * 112}px`" aria-hidden="true">
+              <path :d="questPath(s.quests.length)" fill="none" stroke="#C4B8F5" stroke-width="5" stroke-dasharray="2 12" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+            </svg>
+            <template x-for="(q, i) in s.quests" :key="q.id">
+              <div class="quest-step" :class="i % 2 ? 'quest-right' : 'quest-left'">
+                <button class="quest-node" :class="'is-' + questStatus(s, i)" :style="`--node:${s.color}`" @click="openQuest(s, i)"
+                        :aria-label="q.title + ' — ' + questStatus(s, i)">
+                  <span x-html="icon(questStatus(s, i)==='locked' ? 'lock' : (questStatus(s, i)==='completed' ? 'check' : 'play'), 'w-8 h-8')"></span>
+                </button>
+                <div class="quest-label">
+                  <p class="text-[11px] font-extrabold text-slate-500" x-text="q.code + ' (sample)'"></p>
+                  <p class="font-display font-bold leading-tight" :class="questStatus(s, i)==='locked' && 'text-slate-400'" x-text="(i + 1) + '. ' + q.title"></p>
+                  <p class="text-lg leading-none mt-0.5" :aria-label="questStars(q.id) + ' of 3 stars'">
+                    <template x-for="n in 3" :key="n"><span :class="n <= questStars(q.id) ? '' : 'opacity-20 grayscale'">⭐</span></template>
+                  </p>
+                </div>
+              </div>
+            </template>
+            <!-- Subject trophy -->
+            <div class="quest-step">
+              <div class="quest-node quest-trophy" :class="!hasBadge(s.id + '-star') && 'opacity-50'"><i data-lucide="trophy" class="w-9 h-9"></i></div>
+            </div>
+            <p class="text-center text-sm font-bold text-slate-600 -mt-2" x-text="hasBadge(s.id + '-star') ? '🏆 ' + s.name + ' Star badge earned!' : 'Finish every quest to earn the ' + s.name + ' Star badge!'"></p>
+          </div>
+        </div>
+      </template>
+
+      <!-- ===== LESSON PAGE ===== -->
+      <template x-if="screen==='student-lesson' && findQuiz(param)">
+        <div x-data="{ q: findQuiz(param) }" class="space-y-4 anim-slide-up">
+          <a :href="'#/student/subject/' + q.subjectId" class="btn btn-ghost btn-sm gap-1 -ml-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Quest map</a>
+
+          <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+            <span class="badge border-0 font-bold text-white" :style="`background:${subject(q.subjectId).color}`" x-text="subject(q.subjectId).name"></span>
+            <h1 class="font-display text-3xl font-bold mt-2" x-text="q.title"></h1>
+            <div class="mt-3 rounded-2xl bg-slate-50 p-3 text-sm">
+              <p class="font-extrabold text-slate-700">🎯 Competency <span class="font-mono text-xs bg-white border rounded px-1.5 py-0.5" x-text="q.code"></span> <span class="text-xs text-slate-500">(sample code)</span></p>
+              <p class="mt-1 text-slate-700" x-text="q.competency"></p>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+            <h2 class="font-display text-xl font-bold">📖 Quick lesson</h2>
+            <ol class="mt-3 space-y-3">
+              <template x-for="(part, i) in q.lesson" :key="i">
+                <li class="flex gap-3">
+                  <span class="w-7 h-7 shrink-0 rounded-full bg-brand text-white grid place-items-center text-sm font-extrabold" x-text="i + 1"></span>
+                  <p class="text-base sm:text-lg leading-relaxed" x-html="part"></p>
+                </li>
+              </template>
+            </ol>
+          </div>
+
+          <div class="bg-brand-light rounded-3xl p-5">
+            <p class="font-extrabold text-brand">Your challenge level: <span x-text="modeInfo(q.id).emoji + ' ' + modeInfo(q.id).name"></span></p>
+            <p class="text-sm mt-1" x-text="modeInfo(q.id).note"></p>
+            <p class="text-sm mt-1 text-slate-700">6 questions · 20 seconds each · instant feedback after every answer.</p>
+            <p class="text-sm mt-1 font-bold" x-show="student.quests[q.id]" x-text="'Your best: ' + (student.quests[q.id]?.bestAccuracy) + '% · ' + fmt(student.quests[q.id]?.bestScore) + ' pts'"></p>
+          </div>
+
+          <button class="btn btn-primary btn-lg btn-block btn-3d text-xl font-display h-16" @click="go('#/student/play/' + q.id)">
+            <i data-lucide="swords" class="w-6 h-6"></i> Start Challenge
+          </button>
+        </div>
+      </template>
+
+      <!-- ===== RESULTS ===== -->
+      <template x-if="screen==='student-results' && results">
+        <div class="space-y-5 anim-slide-up">
+          <section class="rounded-3xl p-6 text-white text-center bg-gradient-to-br from-[#5B3FD9] to-[#7C5CFF] shadow-lg">
+            <p class="font-extrabold text-white/85" x-text="results.title"></p>
+            <h1 class="font-display text-3xl font-bold" x-text="results.accuracy >= 80 ? 'Quest complete! 🎉' : (results.accuracy >= 50 ? 'Nice effort! 👏' : 'You finished! 💪')"></h1>
+            <div class="flex justify-center gap-2 mt-3 text-5xl" :aria-label="results.stars + ' of 3 stars'">
+              <template x-for="n in 3" :key="n">
+                <span class="anim-bounce-in" :style="`animation-delay:${n * 0.2}s`" :class="n <= results.stars ? '' : 'opacity-25 grayscale'">⭐</span>
+              </template>
+            </div>
+            <p class="font-display text-5xl font-bold mt-3" x-text="fmt(results.score)"></p>
+            <p class="text-white/85 font-bold">points</p>
+            <div class="grid grid-cols-3 gap-2 mt-4">
+              <div class="bg-white/15 rounded-2xl py-2"><p class="font-display text-2xl font-bold" x-text="results.accuracy + '%'"></p><p class="text-xs font-bold text-white/85">accuracy</p></div>
+              <div class="bg-white/15 rounded-2xl py-2"><p class="font-display text-2xl font-bold" x-text="'+' + results.xpGained"></p><p class="text-xs font-bold text-white/85">XP gained</p></div>
+              <div class="bg-white/15 rounded-2xl py-2"><p class="font-display text-2xl font-bold" x-text="results.correct + '/' + results.total"></p><p class="text-xs font-bold text-white/85">correct</p></div>
+            </div>
+          </section>
+
+          <div x-show="results.levelUp" class="rounded-3xl p-4 bg-sun text-brand-dark text-center font-display text-xl font-bold anim-pop">
+            ⬆️ Level up! You’re now Level <span x-text="results.newLevel"></span>!
+          </div>
+
+          <!-- New badges -->
+          <template x-if="results.newBadges.length">
+            <section class="bg-white rounded-3xl p-5 shadow-sm border-2 border-sun">
+              <h2 class="font-display text-xl font-bold">🏅 Badge unlocked!</h2>
+              <div class="flex flex-wrap gap-3 mt-3">
+                <template x-for="id in results.newBadges" :key="id">
+                  <div class="flex items-center gap-3 bg-amber-50 rounded-2xl p-3 anim-bounce-in">
+                    <span class="text-4xl" x-text="badge(id).emoji"></span>
+                    <div><p class="font-extrabold" x-text="badge(id).name"></p><p class="text-xs text-slate-600" x-text="badge(id).desc"></p></div>
+                  </div>
+                </template>
+              </div>
+            </section>
+          </template>
+
+          <!-- Adaptive message -->
+          <template x-if="!results.custom">
+            <section class="rounded-3xl p-5 shadow-sm" :class="results.accuracy < 50 ? 'bg-amber-50 border border-amber-200' : 'bg-brand-light'">
+              <p class="font-extrabold text-lg" x-text="results.adaptiveMessage"></p>
+              <p class="text-sm mt-1 text-slate-700" x-text="'Next challenge: ' + Adaptive.LABELS[results.newMode].emoji + ' ' + Adaptive.LABELS[results.newMode].name + ' — ' + Adaptive.LABELS[results.newMode].note"></p>
+              <a x-show="results.accuracy < 50" :href="'#/student/lesson/' + results.id" class="btn btn-warning mt-3 gap-2"><i data-lucide="book-open" class="w-4 h-4"></i> Re-read the lesson</a>
+            </section>
+          </template>
+
+          <!-- Review mistakes -->
+          <section class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+            <h2 class="font-display text-xl font-bold">🔍 Review mistakes</h2>
+            <p x-show="!results.mistakes.length" class="mt-2 font-bold text-green-700">No mistakes — amazing! 💯</p>
+            <div class="mt-3 space-y-3">
+              <template x-for="(m, i) in results.mistakes" :key="i">
+                <div class="rounded-2xl bg-slate-50 p-4">
+                  <p class="font-bold" x-text="m.q.question"></p>
+                  <p class="text-sm mt-2"><span class="font-bold text-amber-700">Your answer:</span> <span x-text="m.chosen === null ? 'No answer (time ran out)' : m.q.choices[m.chosen]"></span></p>
+                  <p class="text-sm"><span class="font-bold text-green-700">Correct answer:</span> <span x-text="m.q.choices[m.q.answer]"></span></p>
+                  <p class="text-sm mt-1 text-slate-700" x-text="'💡 ' + m.q.explain"></p>
+                </div>
+              </template>
+            </div>
+          </section>
+
+          <!-- Class leaderboard (simulated classmates) -->
+          <section class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+            <h2 class="font-display text-xl font-bold">🏆 Class leaderboard</h2>
+            <p class="text-xs text-slate-500">Classmates’ best scores on this quest (demo data)</p>
+            <ol class="mt-3 space-y-2">
+              <template x-for="(row, i) in results.leaderboard" :key="row.name">
+                <li class="flex items-center gap-3 rounded-2xl px-3 py-2" :class="row.me ? 'bg-brand-light ring-2 ring-brand' : 'bg-slate-50'">
+                  <span class="w-7 text-center font-display font-bold text-lg" x-text="i < 3 ? ['🥇','🥈','🥉'][i] : i + 1"></span>
+                  <img :src="avatarUrl(row.avatar)" class="w-9 h-9 rounded-full bg-white" alt="">
+                  <span class="font-bold flex-1 truncate" x-text="row.name"></span>
+                  <span class="font-extrabold" x-text="fmt(row.score)"></span>
+                </li>
+              </template>
+            </ol>
+          </section>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button class="btn btn-primary btn-3d" @click="go('#/student/play/' + results.id)"><i data-lucide="rotate-ccw" class="w-4 h-4"></i> Play again</button>
+            <a x-show="!results.custom" :href="'#/student/subject/' + results.subjectId" class="btn btn-outline"><i data-lucide="map" class="w-4 h-4"></i> Quest map</a>
+            <a href="#/student" class="btn btn-ghost"><i data-lucide="home" class="w-4 h-4"></i> Home</a>
+          </div>
+        </div>
+      </template>
+
+      <!-- ===== ALL BADGES ===== -->
+      <template x-if="screen==='student-badges'">
+        <div class="anim-slide-up">
+          <h1 class="font-display text-3xl font-bold">My badges</h1>
+          <p class="text-slate-600" x-text="student.badges.length + ' of ' + data.badges.length + ' unlocked'"></p>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
+            <template x-for="b in data.badges" :key="b.id">
+              <div class="bg-white rounded-3xl p-4 text-center shadow-sm border border-slate-100" :class="!hasBadge(b.id) && 'opacity-50'">
+                <p class="text-5xl" :class="!hasBadge(b.id) && 'grayscale'" x-text="b.emoji"></p>
+                <p class="font-display font-bold mt-2" x-text="b.name"></p>
+                <p class="text-xs text-slate-600 mt-1" x-text="b.desc"></p>
+                <p class="text-xs font-extrabold mt-2" :class="hasBadge(b.id) ? 'text-green-700' : 'text-slate-500'" x-text="hasBadge(b.id) ? '✓ Unlocked' : '🔒 Locked'"></p>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <!-- ===== JOIN LIVE GAME (player, works with a host in another tab) ===== -->
+      <template x-if="screen==='student-join'">
+        <div class="anim-slide-up">
+          <!-- Enter PIN -->
+          <template x-if="player.phase==='form' || player.phase==='connecting'">
+            <div class="max-w-md mx-auto bg-white rounded-3xl p-6 shadow-sm border border-slate-100 mt-4">
+              <div class="text-center">
+                <span class="inline-grid place-items-center w-16 h-16 rounded-2xl bg-neutral text-white"><i data-lucide="radio" class="w-8 h-8"></i></span>
+                <h1 class="font-display text-3xl font-bold mt-3">Join a live game</h1>
+                <p class="text-slate-600 text-sm">Type the 6-number PIN on your teacher’s screen.</p>
+              </div>
+              <form class="mt-5 space-y-3" @submit.prevent="playerJoin()">
+                <label class="form-control">
+                  <span class="label-text font-bold mb-1">Game PIN</span>
+                  <input x-model="player.pin" inputmode="numeric" maxlength="6" placeholder="123456" class="input input-bordered input-lg text-center font-display text-3xl tracking-[0.3em]" autocomplete="off">
+                </label>
+                <label class="form-control">
+                  <span class="label-text font-bold mb-1">Nickname</span>
+                  <input x-model="player.nickname" maxlength="12" class="input input-bordered input-lg" autocomplete="off">
+                  <span class="text-xs text-slate-500 mt-1">🛡️ Use a nickname — never your full real name.</span>
+                </label>
+                <div x-show="player.error" class="alert alert-warning text-sm" x-text="player.error"></div>
+                <button class="btn btn-primary btn-lg btn-block btn-3d" :disabled="player.phase==='connecting'">
+                  <span x-show="player.phase==='connecting'" class="loading loading-spinner"></span>
+                  <span x-text="player.phase==='connecting' ? 'Joining…' : 'Join!'"></span>
+                </button>
+              </form>
+              <p class="text-xs text-slate-500 mt-4">Demo tip: open the Teacher → Host Live Game screen in another tab of this same browser, then join here with its PIN.</p>
+            </div>
+          </template>
+
+          <!-- Lobby -->
+          <template x-if="player.phase==='lobby'">
+            <div class="text-center mt-8">
+              <img :src="avatarUrl(student.avatar)" class="w-28 h-28 rounded-full mx-auto bg-white shadow anim-float" alt="">
+              <h1 class="font-display text-3xl font-bold mt-4">You’re in, <span x-text="player.nickname"></span>! 🎉</h1>
+              <p class="text-slate-600 mt-1">Look for your name on the teacher’s screen.</p>
+              <p class="mt-4 font-bold" x-text="'Game: ' + player.title"></p>
+              <p class="mt-6 flex items-center justify-center gap-2 text-brand font-bold"><span class="loading loading-dots"></span> Waiting for the teacher to start…</p>
+              <button class="btn btn-ghost btn-sm mt-6" @click="playerLeave()">Leave game</button>
+            </div>
+          </template>
+
+          <!-- Question / answered -->
+          <template x-if="player.phase==='question' || player.phase==='answered'">
+            <div class="mt-2">
+              <p class="text-sm font-bold text-slate-500" x-text="'Question ' + (player.index + 1) + ' of ' + player.total"></p>
+              <p class="font-display text-xl font-semibold mt-1 bg-white rounded-2xl p-4 shadow-sm" x-text="player.question.text"></p>
+              <div class="grid grid-cols-2 gap-3 mt-4">
+                <template x-for="(choice, i) in player.question.choices" :key="i">
+                  <button class="ans" :class="[shapes[i].cls, player.phase==='answered' ? (player.choice===i ? 'is-picked' : 'is-dim') : '']"
+                          :disabled="player.phase!=='question'" @click="playerAnswer(i)" :aria-label="shapes[i].label + ': ' + choice">
+                    <span x-html="shapeSvg(i)"></span><span x-text="choice"></span>
+                  </button>
+                </template>
+              </div>
+              <p x-show="player.phase==='answered'" class="text-center font-bold text-brand mt-5 flex items-center justify-center gap-2">
+                <span class="loading loading-dots"></span> Answer locked in! Waiting for everyone…
+              </p>
+            </div>
+          </template>
+
+          <!-- Reveal -->
+          <template x-if="player.phase==='reveal'">
+            <div class="mt-4 rounded-3xl p-6 text-center shadow-sm anim-pop" :class="player.result.correct ? 'bg-green-50 border-2 border-green-300' : 'bg-amber-50 border-2 border-amber-300'">
+              <p class="text-6xl" x-text="player.result.correct ? '✅' : '💡'"></p>
+              <h2 class="font-display text-3xl font-bold mt-2" x-text="player.result.correct ? 'Correct!' : 'Good try!'"></h2>
+              <p class="font-bold mt-1" x-text="player.result.correct ? '+' + fmt(player.result.points) + ' points' : 'The answer was: ' + player.result.correctText"></p>
+              <p class="mt-3 text-slate-700" x-text="'💡 ' + player.result.explain"></p>
+              <p class="mt-4 font-display text-xl font-bold" x-text="'You’re #' + player.result.rank + ' of ' + player.result.players + ' · ' + fmt(player.result.score) + ' pts'"></p>
+            </div>
+          </template>
+
+          <!-- End -->
+          <template x-if="player.phase==='end'">
+            <div class="mt-6 text-center bg-white rounded-3xl p-6 shadow-sm">
+              <p class="text-6xl" x-text="player.final.rank <= 3 ? ['🥇','🥈','🥉'][player.final.rank - 1] : '🎮'"></p>
+              <h2 class="font-display text-3xl font-bold mt-2" x-text="'You finished #' + player.final.rank + ' of ' + player.final.players + '!'"></h2>
+              <p class="font-bold mt-1" x-text="fmt(player.final.score) + ' points'"></p>
+              <p class="text-sm text-slate-600 mt-3" x-text="'Podium: ' + player.final.podium.join(' · ')"></p>
+              <a href="#/student" class="btn btn-primary mt-5" @click="playerLeave()">Back home</a>
+            </div>
+          </template>
+        </div>
+      </template>
+    </main>
+
+    <!-- Bottom navigation (mobile app style) -->
+    <nav x-show="screen!=='student-play'" class="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200">
+      <div class="max-w-3xl mx-auto grid grid-cols-4 h-16">
+        <a href="#/student" class="flex flex-col items-center justify-center gap-0.5 text-xs font-bold" :class="['student-home','student-subject','student-lesson','student-results'].includes(screen) ? 'text-brand' : 'text-slate-500'">
+          <i data-lucide="home" class="w-6 h-6"></i>Home
+        </a>
+        <a href="#/student/badges" class="flex flex-col items-center justify-center gap-0.5 text-xs font-bold" :class="screen==='student-badges' ? 'text-brand' : 'text-slate-500'">
+          <i data-lucide="award" class="w-6 h-6"></i>Badges
+        </a>
+        <a href="#/student/join" class="flex flex-col items-center justify-center gap-0.5 text-xs font-bold" :class="screen==='student-join' ? 'text-brand' : 'text-slate-500'">
+          <i data-lucide="radio" class="w-6 h-6"></i>Live
+        </a>
+        <a href="#/" class="flex flex-col items-center justify-center gap-0.5 text-xs font-bold text-slate-500">
+          <i data-lucide="log-out" class="w-6 h-6"></i>Exit
+        </a>
+      </div>
+    </nav>
+  </div>
+</template>
+
+<!-- ===================================================================
+     TEACHER APP (Canvas-like: sidebar on desktop, bottom nav on mobile)
+     =================================================================== -->
+<template x-if="role==='teacher'">
+  <div class="min-h-screen bg-slate-50" x-cloak>
+    <aside class="hidden lg:flex fixed inset-y-0 left-0 w-64 flex-col bg-white border-r border-slate-200 z-30">
+      <a href="#/teacher" class="flex items-center gap-2 px-5 h-16 border-b border-slate-100">
+        <span x-html="logo('w-9 h-9')"></span>
+        <div><p class="font-display font-bold text-xl text-brand leading-none">EduQuest</p><p class="text-xs text-slate-500 font-bold">Teacher</p></div>
+      </a>
+      <div class="px-5 py-4">
+        <p class="text-xs uppercase font-extrabold text-slate-500 tracking-wide">Class</p>
+        <p class="font-bold" x-text="data.className"></p>
+        <p class="text-sm text-slate-500" x-text="data.teacherName"></p>
+      </div>
+      <nav class="flex-1 px-3 space-y-1">
+        <template x-for="item in teacherNav" :key="item.id">
+          <a :href="'#/teacher/' + item.id" class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold"
+             :class="screen==='teacher-' + item.id ? 'bg-brand-light text-brand' : 'text-slate-600 hover:bg-slate-100'">
+            <span x-html="icon(item.icon)"></span><span x-text="item.label"></span>
+          </a>
+        </template>
+      </nav>
+      <div class="p-3 border-t border-slate-100 space-y-1">
+        <a href="#/" class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold"><i data-lucide="repeat" class="w-5 h-5"></i> Switch role</a>
+        <button @click="showResetModal=true" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold"><i data-lucide="rotate-ccw" class="w-5 h-5"></i> Reset demo</button>
+      </div>
+    </aside>
+
+    <div class="lg:pl-64">
+      <header class="sticky top-0 z-20 bg-white border-b border-slate-200 h-14 flex items-center gap-3 px-4 lg:px-8">
+        <a href="#/teacher" class="lg:hidden" x-html="logo('w-8 h-8')"></a>
+        <h1 class="font-display text-xl font-bold" x-text="teacherTitle()"></h1>
+        <span class="ml-auto badge bg-slate-100 border-0 font-bold hidden sm:inline-flex" x-text="data.className"></span>
+        <a href="#/" class="btn btn-ghost btn-sm lg:hidden" aria-label="Switch role"><i data-lucide="repeat" class="w-4 h-4"></i></a>
+      </header>
+
+      <main class="p-4 lg:p-8 max-w-6xl">
+
+        <!-- ===== CLASS DASHBOARD ===== -->
+        <template x-if="screen==='teacher-dashboard'">
+          <div class="space-y-6" x-data="{ st: classStats(), weak: weakestCompetency() }">
+            <div>
+              <p class="text-xs uppercase font-extrabold text-slate-500 tracking-wide">Key metrics · from our Lean Canvas</p>
+              <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-2">
+                <div class="bg-white rounded-2xl p-4 border border-slate-200">
+                  <p class="text-sm text-slate-600 font-bold">Weekly active students</p>
+                  <p class="font-display text-3xl font-bold mt-1" x-text="st.weeklyActive + ' / ' + st.students"></p>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border border-slate-200">
+                  <p class="text-sm text-slate-600 font-bold">Class average score</p>
+                  <p class="font-display text-3xl font-bold mt-1" x-text="st.classAvg + '%'"></p>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border border-slate-200">
+                  <p class="text-sm text-slate-600 font-bold">Challenges per student</p>
+                  <p class="font-display text-3xl font-bold mt-1" x-text="st.challengesPerStudent"></p>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border border-slate-200">
+                  <p class="text-sm text-slate-600 font-bold">Score gain on repeated topics</p>
+                  <p class="font-display text-3xl font-bold mt-1 text-green-700" x-text="'+' + st.improvement + ' pts'"></p>
+                </div>
+              </div>
+            </div>
+
+            <div x-show="weak" class="rounded-2xl p-4 bg-rose-50 border border-rose-200 flex flex-col sm:flex-row sm:items-center gap-3">
+              <span class="text-rose-700"><i data-lucide="alert-triangle" class="w-6 h-6"></i></span>
+              <p class="flex-1 text-sm"><b>Needs attention:</b> <span x-text="weak.title + ' (' + weak.code + ')'"></span> has the lowest class average at <b x-text="weak.avg + '%'"></b>.</p>
+              <div class="flex gap-2">
+                <a href="#/teacher/heatmap" class="btn btn-sm btn-outline">View heatmap</a>
+                <button class="btn btn-sm btn-primary" @click="openAssign(weak.id)">Assign practice</button>
+              </div>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-4">
+              <div class="bg-white rounded-2xl p-4 border border-slate-200 lg:col-span-2">
+                <h2 class="font-bold">Class average by subject</h2>
+                <p class="text-xs text-slate-500">Average best score across each subject’s competencies</p>
+                <div class="h-64 mt-3"><canvas id="chart-subjects" role="img" aria-label="Bar chart of class average score per subject"></canvas></div>
+              </div>
+              <div class="bg-white rounded-2xl p-4 border border-slate-200">
+                <h2 class="font-bold">Mastery levels</h2>
+                <p class="text-xs text-slate-500">All student × competency results</p>
+                <div class="h-64 mt-3"><canvas id="chart-mastery" role="img" aria-label="Doughnut chart of mastery levels"></canvas></div>
+              </div>
+            </div>
+
+            <!-- Roster -->
+            <div class="bg-white rounded-2xl border border-slate-200">
+              <div class="p-4 flex items-center justify-between">
+                <h2 class="font-bold">Class roster</h2>
+                <p class="text-xs text-slate-500">Tap a column to sort</p>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="table table-sm">
+                  <thead>
+                    <tr class="text-slate-600">
+                      <th><button class="font-bold" @click="sortRoster('nickname')">Student ↕</button></th>
+                      <th><button class="font-bold" @click="sortRoster('completedPct')">Quests done ↕</button></th>
+                      <th><button class="font-bold" @click="sortRoster('avgScore')">Avg score ↕</button></th>
+                      <th>Weakest competency</th>
+                      <th><button class="font-bold" @click="sortRoster('challenges')">Challenges ↕</button></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-for="r in rosterRows()" :key="r.id">
+                      <tr :class="r.isMe && 'bg-brand-light'">
+                        <td>
+                          <div class="flex items-center gap-2 min-w-[150px]">
+                            <img :src="avatarUrl(r.avatar)" class="w-8 h-8 rounded-full bg-slate-100" alt="">
+                            <span class="font-bold" x-text="r.nickname"></span>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="flex items-center gap-2 min-w-[120px]">
+                            <progress class="progress progress-primary w-20" :value="r.completedPct" max="100"></progress>
+                            <span class="text-xs font-bold" x-text="r.completedPct + '%'"></span>
+                          </div>
+                        </td>
+                        <td>
+                          <span class="badge border-0 font-bold" :class="'heat-' + masteryBand(r.avgScore)" x-text="r.avgScore == null ? '—' : r.avgScore + '%'"></span>
+                        </td>
+                        <td class="min-w-[180px]">
+                          <template x-if="r.weakest">
+                            <span class="text-sm"><span class="font-mono text-xs bg-slate-100 rounded px-1" x-text="r.weakest.code"></span> <span x-text="r.weakest.short + ' (' + r.weakest.score + '%)'"></span></span>
+                          </template>
+                          <template x-if="!r.weakest"><span class="text-sm text-slate-400">No data yet</span></template>
+                        </td>
+                        <td class="font-bold" x-text="r.challenges"></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- ===== MASTERY HEATMAP ===== -->
+        <template x-if="screen==='teacher-heatmap'">
+          <div class="space-y-4" x-data="{ roster: classRoster(), comps: competencyAverages(), weak: weakestCompetency() }">
+            <p class="text-slate-600">Each cell is a student’s best score on one competency. Use it to spot who needs help — and on what.</p>
+            <div class="flex flex-wrap gap-2 text-sm font-bold">
+              <span class="flex items-center gap-1.5"><span class="heat-cell heat-high !w-6 !h-6 text-[10px]">80</span> Mastered (80%+)</span>
+              <span class="flex items-center gap-1.5"><span class="heat-cell heat-mid !w-6 !h-6 text-[10px]">65</span> Developing (50–79%)</span>
+              <span class="flex items-center gap-1.5"><span class="heat-cell heat-low !w-6 !h-6 text-[10px]">40</span> Needs help (&lt;50%)</span>
+              <span class="flex items-center gap-1.5"><span class="heat-cell heat-none !w-6 !h-6 text-[10px]">–</span> Not started</span>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-auto max-h-[70vh]">
+              <table class="heatmap m-2">
+                <thead>
+                  <tr>
+                    <th class="sticky-col text-left text-sm px-2 min-w-[140px]">Student</th>
+                    <template x-for="c in comps" :key="c.id">
+                      <th class="align-bottom pb-1">
+                        <div class="w-[52px] text-[10px] leading-tight font-extrabold text-slate-700" :title="c.code + ': ' + c.competency">
+                          <div class="h-1.5 rounded-full mb-1" :style="`background:${c.subject.color}`"></div>
+                          <span x-text="c.short"></span>
+                          <div class="font-mono font-normal text-slate-500" x-text="c.code.split('-')[0]"></div>
+                        </div>
+                      </th>
+                    </template>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="st in roster" :key="st.id">
+                    <tr>
+                      <td class="sticky-col pr-2">
+                        <div class="flex items-center gap-2">
+                          <img :src="avatarUrl(st.avatar)" class="w-7 h-7 rounded-full bg-slate-100" alt="">
+                          <span class="text-sm font-bold whitespace-nowrap" :class="st.isMe && 'text-brand'" x-text="st.nickname"></span>
+                        </div>
+                      </td>
+                      <template x-for="c in comps" :key="c.id">
+                        <td><div class="heat-cell" :class="'heat-' + masteryBand(st.mastery[c.id])" :title="st.nickname + ' · ' + c.title + ': ' + masteryLabel(st.mastery[c.id])" x-text="st.mastery[c.id] ?? '–'"></div></td>
+                      </template>
+                    </tr>
+                  </template>
+                  <tr>
+                    <td class="sticky-col pr-2 text-sm font-extrabold pt-2">Class average</td>
+                    <template x-for="c in comps" :key="c.id">
+                      <td class="pt-2"><div class="heat-cell ring-2 ring-slate-800" :class="'heat-' + masteryBand(c.avg)" x-text="c.avg ?? '–'"></div></td>
+                    </template>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div x-show="weak" class="rounded-2xl p-4 bg-white border border-slate-200 flex flex-col sm:flex-row sm:items-center gap-3">
+              <span class="text-brand"><i data-lucide="lightbulb" class="w-6 h-6"></i></span>
+              <p class="flex-1 text-sm"><b>Suggestion:</b> the class is weakest in <b x-text="weak.title"></b> (<span x-text="weak.code"></span>, <span x-text="weak.avg + '%'"></span>). Assign it as practice, or review it together in a live game.</p>
+              <div class="flex gap-2">
+                <button class="btn btn-sm btn-primary" @click="openAssign(weak.id)">Assign</button>
+                <button class="btn btn-sm btn-outline" @click="live.sourceId = weak.id; go('#/teacher/live')">Host live</button>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- ===== CHALLENGE LIBRARY ===== -->
+        <template x-if="screen==='teacher-library'">
+          <div class="space-y-5">
+            <!-- Current assignments -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-4">
+              <h2 class="font-bold flex items-center gap-2"><i data-lucide="clipboard-list" class="w-5 h-5"></i> Assigned to <span x-text="data.className"></span></h2>
+              <p x-show="!assignments.length" class="text-sm text-slate-500 mt-1">Nothing assigned yet. Pick a quest below and click “Assign”.</p>
+              <ul class="mt-2 divide-y divide-slate-100">
+                <template x-for="a in myAssignments()" :key="a.id">
+                  <li class="flex items-center gap-3 py-2">
+                    <span class="text-xl" x-text="a.subject.emoji"></span>
+                    <div class="flex-1 min-w-0">
+                      <p class="font-bold truncate" x-text="a.quiz.title"></p>
+                      <p class="text-xs text-slate-500" x-text="'Due ' + shortDate(a.due) + ' · demo student: ' + (a.done ? 'done ✓' : 'not yet')"></p>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" @click="removeAssignment(a.id)" aria-label="Remove assignment"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                  </li>
+                </template>
+              </ul>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+              <div class="flex flex-wrap gap-1">
+                <template x-for="f in [{id:'all',label:'All'}, ...data.subjects.map(s => ({id:s.id, label:s.name})), {id:'mine',label:'My quizzes'}]" :key="f.id">
+                  <button class="btn btn-sm" :class="libraryFilter===f.id ? 'btn-primary' : 'btn-ghost bg-white border-slate-200'" @click="libraryFilter=f.id" x-text="f.label"></button>
+                </template>
+              </div>
+              <label class="input input-bordered input-sm flex items-center gap-2 sm:ml-auto bg-white">
+                <i data-lucide="search" class="w-4 h-4 opacity-60"></i>
+                <input x-model="librarySearch" placeholder="Search title or code" class="grow">
+              </label>
+            </div>
+
+            <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <template x-for="item in libraryItems()" :key="item.id">
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col">
+                  <div class="h-2" :style="`background:${item.subject.color}`"></div>
+                  <div class="p-4 flex-1 flex flex-col">
+                    <div class="flex items-center gap-2 text-xs font-bold">
+                      <span class="badge border-0 text-white" :style="`background:${item.subject.color}`" x-text="item.subject.name"></span>
+                      <span class="font-mono text-slate-500" x-text="item.code + (item.custom ? '' : ' (sample)')"></span>
+                    </div>
+                    <h3 class="font-display text-lg font-bold mt-2" x-text="item.title"></h3>
+                    <p class="text-sm text-slate-600 mt-1 flex-1" x-text="item.competency"></p>
+                    <p class="text-xs text-slate-500 mt-2" x-text="item.questions.length + ' questions · ' + difficultyMix(item.questions)"></p>
+                    <div class="flex flex-wrap gap-2 mt-3">
+                      <button class="btn btn-sm btn-ghost border-slate-200" @click="previewQuiz = findQuiz(item.id)"><i data-lucide="eye" class="w-4 h-4"></i> Preview</button>
+                      <button class="btn btn-sm btn-primary" @click="openAssign(item.id)"><i data-lucide="calendar-plus" class="w-4 h-4"></i> Assign</button>
+                      <button class="btn btn-sm btn-outline" @click="live.sourceId = item.id; go('#/teacher/live')"><i data-lucide="radio" class="w-4 h-4"></i> Host</button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+            <p x-show="!libraryItems().length" class="text-center text-slate-500 py-8">No quizzes match. Try another filter, or make one in the Quiz Builder.</p>
+          </div>
+        </template>
+
+        <!-- ===== QUIZ BUILDER ===== -->
+        <template x-if="screen==='teacher-builder'">
+          <div class="grid lg:grid-cols-3 gap-5">
+            <div class="lg:col-span-2 space-y-4">
+              <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                  <h2 class="font-bold">New quiz</h2>
+                  <button class="btn btn-ghost btn-sm" @click="fillSampleQuiz()"><i data-lucide="wand-2" class="w-4 h-4"></i> Fill sample</button>
+                </div>
+                <div class="grid sm:grid-cols-3 gap-3">
+                  <label class="form-control sm:col-span-2">
+                    <span class="label-text font-bold mb-1">Title</span>
+                    <input x-model="builder.title" class="input input-bordered" placeholder="e.g. Fractions Quick Check">
+                  </label>
+                  <label class="form-control">
+                    <span class="label-text font-bold mb-1">Subject</span>
+                    <select x-model="builder.subjectId" class="select select-bordered">
+                      <template x-for="s in data.subjects" :key="s.id"><option :value="s.id" x-text="s.name" :selected="builder.subjectId===s.id"></option></template>
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <template x-for="(q, qi) in builder.questions" :key="q.uid">
+                <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-3">
+                  <div class="flex items-center gap-2">
+                    <h3 class="font-bold" x-text="'Question ' + (qi + 1)"></h3>
+                    <select x-model="q.difficulty" class="select select-bordered select-xs ml-auto" aria-label="Difficulty">
+                      <option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option>
+                    </select>
+                    <button class="btn btn-ghost btn-xs" @click="removeBuilderQuestion(qi)" :disabled="builder.questions.length===1" aria-label="Remove question"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                  </div>
+                  <textarea x-model="q.question" class="textarea textarea-bordered w-full" rows="2" placeholder="Type the question"></textarea>
+                  <div class="grid sm:grid-cols-2 gap-2">
+                    <template x-for="(c, ci) in q.choices" :key="ci">
+                      <label class="flex items-center gap-2 rounded-xl p-2 border-2" :class="q.answer===ci ? 'border-green-600 bg-green-50' : 'border-slate-200'">
+                        <span class="rounded-lg p-1.5" :class="shapes[ci].cls" x-html="shapeSvg(ci, 'w-4 h-4')"></span>
+                        <input x-model="q.choices[ci]" class="input input-sm input-ghost flex-1 min-w-0" :placeholder="'Choice ' + (ci + 1)">
+                        <input type="radio" class="radio radio-success radio-sm" :name="'correct-' + q.uid" :checked="q.answer===ci" @change="q.answer = ci" :aria-label="'Mark choice ' + (ci + 1) + ' as correct'">
+                      </label>
+                    </template>
+                  </div>
+                  <p class="text-xs text-slate-500">Select the radio button next to the correct answer.</p>
+                  <input x-model="q.explain" class="input input-bordered w-full" placeholder="One-sentence explanation (shown as instant feedback)">
+                </div>
+              </template>
+
+              <div x-show="builder.errors.length" class="alert alert-warning">
+                <ul class="text-sm list-disc pl-4"><template x-for="e in builder.errors" :key="e"><li x-text="e"></li></template></ul>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button class="btn btn-outline" @click="addBuilderQuestion()"><i data-lucide="plus" class="w-4 h-4"></i> Add question</button>
+                <button class="btn btn-primary" @click="saveBuilderQuiz()"><i data-lucide="save" class="w-4 h-4"></i> Save quiz</button>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <h2 class="font-bold">My saved quizzes</h2>
+              <p x-show="!customQuizzes.length" class="text-sm text-slate-500">No quizzes yet. Saved quizzes are stored in this browser.</p>
+              <template x-for="cq in customQuizzes" :key="cq.id">
+                <div class="bg-white rounded-2xl border border-slate-200 p-4">
+                  <p class="font-bold" x-text="cq.title"></p>
+                  <p class="text-xs text-slate-500" x-text="subject(cq.subjectId).name + ' · ' + cq.questions.length + ' questions'"></p>
+                  <div class="flex flex-wrap gap-1 mt-2">
+                    <a class="btn btn-xs btn-primary" :href="'#/student/play/' + cq.id">Play</a>
+                    <button class="btn btn-xs btn-outline" @click="openAssign(cq.id)">Assign</button>
+                    <button class="btn btn-xs btn-outline" @click="live.sourceId = cq.id; go('#/teacher/live')">Host</button>
+                    <button class="btn btn-xs btn-ghost" @click="deleteCustomQuiz(cq.id)" aria-label="Delete quiz"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+
+        <!-- ===== HOST LIVE GAME ===== -->
+        <template x-if="screen==='teacher-live'">
+          <div>
+            <!-- Setup -->
+            <template x-if="live.phase==='setup'">
+              <div class="max-w-xl bg-white rounded-2xl border border-slate-200 p-6">
+                <h2 class="font-display text-2xl font-bold">Host a live game 🎮</h2>
+                <p class="text-slate-600 mt-1">Play a quest together in class, Kahoot-style. Classmate bots join automatically.</p>
+                <label class="form-control mt-4">
+                  <span class="label-text font-bold mb-1">Choose a quest or quiz</span>
+                  <select x-model="live.sourceId" class="select select-bordered">
+                    <template x-for="src in liveSources()" :key="src.id"><option :value="src.id" x-text="src.label" :selected="live.sourceId===src.id"></option></template>
+                  </select>
+                </label>
+                <ul class="text-sm text-slate-600 mt-3 space-y-1">
+                  <li>• 5 questions · 20 seconds each · 8 classmate bots</li>
+                  <li>• Answer chart + top-5 leaderboard after every question</li>
+                  <li x-show="liveSupported()">• Bonus: real players can join from another tab with the PIN</li>
+                </ul>
+                <button class="btn btn-primary btn-lg mt-5 btn-3d" @click="liveCreate()"><i data-lucide="play" class="w-5 h-5"></i> Create game</button>
+              </div>
+            </template>
+
+            <!-- Lobby -->
+            <template x-if="live.phase==='lobby'">
+              <div class="space-y-4">
+                <div class="rounded-3xl p-6 text-white text-center bg-gradient-to-br from-[#46289F] to-[#5B3FD9]">
+                  <p class="font-bold text-white/85" x-text="live.title"></p>
+                  <p class="text-sm font-bold text-white/85 mt-3">Game PIN</p>
+                  <p class="font-display text-6xl sm:text-7xl font-bold tracking-widest" x-text="live.pin.slice(0,3) + ' ' + live.pin.slice(3)"></p>
+                  <p class="text-sm text-white/85 mt-3">Students: open EduQuest → Student → <b>Join a live game</b>, then type this PIN.</p>
+                  <button x-show="liveSupported()" class="btn btn-sm mt-3 bg-white/15 border-0 text-white hover:bg-white/25" @click="openPlayerTab()"><i data-lucide="external-link" class="w-4 h-4"></i> Open a player tab (demo)</button>
+                </div>
+                <div class="flex items-center gap-3">
+                  <p class="font-bold"><span x-text="live.players.length"></span> players joined <span x-show="liveRealPlayers()" class="badge bg-green-100 text-green-800 border-0 ml-1" x-text="liveRealPlayers() + ' real'"></span></p>
+                  <button class="btn btn-ghost btn-sm ml-auto" @click="liveCleanup()">Cancel</button>
+                  <button class="btn btn-primary btn-3d" :disabled="!live.players.length" @click="liveStart()"><i data-lucide="play" class="w-4 h-4"></i> Start</button>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                  <template x-for="p in live.players" :key="p.id">
+                    <div class="bg-white rounded-2xl p-3 text-center border anim-bounce-in" :class="p.isBot ? 'border-slate-200' : 'border-green-500 border-2'">
+                      <img :src="avatarUrl(p.avatar)" class="w-14 h-14 mx-auto rounded-full bg-slate-100" alt="">
+                      <p class="font-bold text-sm mt-1 truncate" x-text="p.nickname"></p>
+                      <p class="text-[10px] font-bold text-slate-500" x-text="p.isBot ? 'bot' : 'real player'"></p>
+                    </div>
+                  </template>
+                </div>
+                <p x-show="!live.players.length" class="text-center text-slate-500 flex items-center justify-center gap-2"><span class="loading loading-dots"></span> Waiting for players…</p>
+              </div>
+            </template>
+
+            <!-- Question -->
+            <template x-if="live.phase==='question'">
+              <div class="space-y-4">
+                <div class="flex items-center gap-3">
+                  <span class="badge badge-lg bg-slate-800 text-white border-0 font-bold" x-text="'Question ' + (live.index + 1) + ' / ' + live.questions.length"></span>
+                  <span class="badge badge-lg border-0 font-bold capitalize bg-slate-200" x-text="liveCurrent().difficulty"></span>
+                  <span class="ml-auto font-bold" x-text="liveAnsweredCount() + ' / ' + live.players.length + ' answered'"></span>
+                </div>
+                <div class="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 text-center">
+                  <p class="font-display text-2xl sm:text-4xl font-semibold leading-snug" x-text="liveCurrent().question"></p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-16 h-16 rounded-full bg-brand text-white grid place-items-center font-display text-3xl font-bold shrink-0" x-text="Math.ceil(live.timeLeft)"></div>
+                  <div class="flex-1 h-3 rounded-full bg-slate-200 overflow-hidden"><div class="h-full rounded-full timer-fill" :class="live.timeLeft <= 5 ? 'bg-rose-500' : 'bg-brand'" :style="`width:${live.timeLeft / LIVE_TIME * 100}%`"></div></div>
+                  <button class="btn btn-sm btn-ghost" @click="liveReveal()">Skip ⏭</button>
+                </div>
+                <div class="grid sm:grid-cols-2 gap-3">
+                  <template x-for="(choice, i) in liveCurrent().choices" :key="i">
+                    <div class="ans" :class="shapes[i].cls"><span x-html="shapeSvg(i, 'w-8 h-8')"></span><span class="text-lg" x-text="choice"></span></div>
+                  </template>
+                </div>
+              </div>
+            </template>
+
+            <!-- Reveal: answer distribution + top 5 -->
+            <template x-if="live.phase==='reveal'">
+              <div class="space-y-4">
+                <div class="bg-white rounded-2xl p-4 border border-slate-200">
+                  <p class="text-sm font-bold text-slate-500" x-text="'Question ' + (live.index + 1) + ': ' + liveCurrent().question"></p>
+                  <p class="mt-2 font-display text-xl font-bold flex items-center gap-2 flex-wrap">
+                    Correct answer:
+                    <span class="inline-flex items-center gap-2 rounded-xl px-3 py-1" :class="shapes[liveCurrent().answer].cls">
+                      <span x-html="shapeSvg(liveCurrent().answer, 'w-4 h-4')"></span><span x-text="liveCurrent().choices[liveCurrent().answer]"></span>
+                    </span>
+                  </p>
+                  <p class="text-sm mt-2 text-slate-700" x-text="'💡 ' + liveCurrent().explain"></p>
+                </div>
+                <div class="grid lg:grid-cols-5 gap-4">
+                  <div class="bg-white rounded-2xl p-4 border border-slate-200 lg:col-span-3">
+                    <h3 class="font-bold">How the class answered</h3>
+                    <div class="h-64 mt-2"><canvas id="chart-live" role="img" aria-label="Bar chart of how many players chose each answer"></canvas></div>
+                  </div>
+                  <div class="bg-white rounded-2xl p-4 border border-slate-200 lg:col-span-2">
+                    <h3 class="font-bold">Top 5</h3>
+                    <ol class="mt-2 space-y-2">
+                      <template x-for="(p, i) in liveRanked().slice(0, 5)" :key="p.id">
+                        <li class="flex items-center gap-2 rounded-xl px-2 py-1.5" :class="p.isBot ? 'bg-slate-50' : 'bg-green-50'">
+                          <span class="w-6 text-center font-bold" x-text="i + 1"></span>
+                          <img :src="avatarUrl(p.avatar)" class="w-8 h-8 rounded-full bg-white" alt="">
+                          <span class="flex-1 font-bold truncate" x-text="p.nickname"></span>
+                          <span class="text-xs font-bold" :class="p.lastCorrect ? 'text-green-700' : 'text-slate-400'" x-text="p.lastCorrect ? '+' + fmt(p.lastPoints) : '+0'"></span>
+                          <span class="font-extrabold w-14 text-right" x-text="fmt(p.score)"></span>
+                        </li>
+                      </template>
+                    </ol>
+                  </div>
+                </div>
+                <div class="flex justify-end">
+                  <button class="btn btn-primary btn-lg btn-3d" @click="liveNext()">
+                    <span x-text="live.index + 1 < live.questions.length ? 'Next question' : 'Show podium 🏆'"></span><i data-lucide="arrow-right" class="w-5 h-5"></i>
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <!-- Podium -->
+            <template x-if="live.phase==='podium'">
+              <div class="space-y-6">
+                <h2 class="font-display text-3xl font-bold text-center">🏆 Podium</h2>
+                <div class="flex items-end justify-center gap-3 sm:gap-6">
+                  <template x-for="slot in [{rank:2, h:'h-28', bg:'bg-slate-300'}, {rank:1, h:'h-40', bg:'bg-sun'}, {rank:3, h:'h-20', bg:'bg-orange-300'}]" :key="slot.rank">
+                    <div class="flex flex-col items-center w-24 sm:w-36" x-show="liveRanked()[slot.rank - 1]">
+                      <img :src="avatarUrl(liveRanked()[slot.rank - 1]?.avatar)" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white shadow anim-bounce-in" :style="`animation-delay:${(4 - slot.rank) * 0.3}s`" alt="">
+                      <p class="font-bold mt-1 text-center truncate w-full" x-text="liveRanked()[slot.rank - 1]?.nickname"></p>
+                      <p class="text-sm font-bold text-slate-600" x-text="fmt(liveRanked()[slot.rank - 1]?.score) + ' pts'"></p>
+                      <div class="w-full rounded-t-2xl mt-2 grid place-items-center font-display text-4xl font-bold text-slate-800" :class="[slot.h, slot.bg]" x-text="slot.rank"></div>
+                    </div>
+                  </template>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-200 p-4 max-w-xl mx-auto">
+                  <h3 class="font-bold">Final ranking</h3>
+                  <ol class="mt-2 divide-y divide-slate-100">
+                    <template x-for="(p, i) in liveRanked()" :key="p.id">
+                      <li class="flex items-center gap-2 py-1.5">
+                        <span class="w-6 text-center font-bold" x-text="i + 1"></span>
+                        <span class="flex-1 font-bold" x-text="p.nickname + (p.isBot ? '' : ' ⭐')"></span>
+                        <span class="font-extrabold" x-text="fmt(p.score)"></span>
+                      </li>
+                    </template>
+                  </ol>
+                </div>
+                <div class="flex justify-center gap-2">
+                  <button class="btn btn-primary" @click="liveCleanup(); liveCreate()"><i data-lucide="rotate-ccw" class="w-4 h-4"></i> Play again</button>
+                  <button class="btn btn-outline" @click="liveCleanup()">New game</button>
+                </div>
+              </div>
+            </template>
+
+            <div x-show="['lobby','question','reveal'].includes(live.phase)" class="mt-6 text-right">
+              <button class="btn btn-ghost btn-sm text-slate-500" @click="liveCleanup()"><i data-lucide="square" class="w-4 h-4"></i> End game</button>
+            </div>
+          </div>
+        </template>
+      </main>
+    </div>
+
+    <!-- Mobile bottom nav -->
+    <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 grid grid-cols-5 h-16">
+      <template x-for="item in teacherNav" :key="item.id">
+        <a :href="'#/teacher/' + item.id" class="flex flex-col items-center justify-center gap-0.5 text-[11px] font-bold" :class="screen==='teacher-' + item.id ? 'text-brand' : 'text-slate-500'">
+          <span x-html="icon(item.icon, 'w-5 h-5')"></span><span x-text="item.label.replace('Quiz ', '')"></span>
+        </a>
+      </template>
+    </nav>
+  </div>
+</template>
+
+<!-- ===================================================================
+     PARENT VIEW
+     =================================================================== -->
+<template x-if="role==='parent'">
+  <div class="min-h-screen bg-slate-50" x-cloak>
+    <header class="sticky top-0 z-20 bg-white border-b border-slate-200">
+      <div class="max-w-5xl mx-auto h-14 px-4 flex items-center gap-2">
+        <span x-html="logo('w-8 h-8')"></span>
+        <p class="font-display font-bold text-xl text-brand">EduQuest</p>
+        <span class="badge bg-orange-100 text-orange-800 border-0 font-bold">Parent</span>
+        <a href="#/" class="btn btn-ghost btn-sm ml-auto"><i data-lucide="repeat" class="w-4 h-4"></i> <span class="hidden sm:inline">Switch role</span></a>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto p-4 lg:p-8 space-y-5">
+      <!-- Child card -->
+      <section class="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+        <img :src="avatarUrl(student.avatar)" class="w-20 h-20 rounded-full bg-slate-100" alt="Child's cartoon avatar">
+        <div class="flex-1">
+          <h1 class="font-display text-2xl font-bold" x-text="student.nickname + '’s progress'"></h1>
+          <p class="text-slate-600 font-bold" x-text="'Grade 4 · Level ' + level() + ' · 🔥 ' + streakCount() + '-day streak'"></p>
+          <p class="mt-1 text-sm text-green-700 font-bold flex items-center gap-1"><i data-lucide="shield-check" class="w-4 h-4"></i> Parental consent given (demo) · Account uses a nickname only</p>
+        </div>
+        <a href="#/student" class="btn btn-outline btn-sm">Open child’s view</a>
+      </section>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="bg-white rounded-2xl p-4 border border-slate-200"><p class="text-sm text-slate-600 font-bold">Time this week</p><p class="font-display text-3xl font-bold" x-text="weekMinutes().reduce((s, d) => s + d.minutes, 0) + ' min'"></p></div>
+        <div class="bg-white rounded-2xl p-4 border border-slate-200"><p class="text-sm text-slate-600 font-bold">Quests completed</p><p class="font-display text-3xl font-bold" x-text="Object.keys(student.quests).filter(id => !id.startsWith('custom')).length + ' / ' + allQuests().length"></p></div>
+        <div class="bg-white rounded-2xl p-4 border border-slate-200"><p class="text-sm text-slate-600 font-bold">Average best score</p><p class="font-display text-3xl font-bold" x-text="Math.round(Util.avg(Object.values(student.quests).map(p => p.bestAccuracy))) + '%'"></p></div>
+        <div class="bg-white rounded-2xl p-4 border border-slate-200"><p class="text-sm text-slate-600 font-bold">Badges earned</p><p class="font-display text-3xl font-bold" x-text="student.badges.length"></p></div>
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-4">
+        <section class="bg-white rounded-2xl border border-slate-200 p-4 lg:col-span-2">
+          <h2 class="font-bold">Learning time this week</h2>
+          <p class="text-xs text-slate-500">Minutes spent on student screens per day</p>
+          <div class="h-60 mt-3"><canvas id="chart-week" role="img" aria-label="Bar chart of learning minutes per day this week"></canvas></div>
+        </section>
+
+        <!-- Screen-time limit -->
+        <section class="bg-white rounded-2xl border border-slate-200 p-4">
+          <h2 class="font-bold flex items-center gap-2"><i data-lucide="alarm-clock" class="w-5 h-5"></i> Daily screen-time limit</h2>
+          <p class="text-xs text-slate-500 mt-1">When the limit is reached, your child sees a friendly “Time for a break!” reminder.</p>
+          <select x-model="settings.limitMin" class="select select-bordered w-full mt-3" aria-label="Daily limit">
+            <option value="0">Off</option>
+            <option value="1">1 minute (for the demo)</option>
+            <option value="15">15 minutes</option>
+            <option value="30">30 minutes</option>
+            <option value="45">45 minutes</option>
+            <option value="60">60 minutes</option>
+          </select>
+          <div class="mt-3 text-sm">
+            <p class="font-bold" x-text="'Today: ' + todayMinutes() + ' min' + (Number(settings.limitMin) ? ' of ' + settings.limitMin + ' min' : '')"></p>
+            <progress x-show="Number(settings.limitMin)" class="progress progress-warning w-full" :value="Math.min(todaySeconds(), settings.limitMin * 60)" :max="settings.limitMin * 60"></progress>
+          </div>
+          <div class="flex gap-2 mt-3">
+            <button class="btn btn-primary btn-sm" @click="saveSettings()">Save</button>
+            <button class="btn btn-ghost btn-sm" @click="resetTodayTime()">Reset today (demo)</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-4">
+        <!-- Subjects -->
+        <section class="bg-white rounded-2xl border border-slate-200 p-4">
+          <h2 class="font-bold">Subjects</h2>
+          <div class="mt-3 space-y-3">
+            <template x-for="row in childSubjectStatus()" :key="row.subject.id">
+              <div class="rounded-xl bg-slate-50 p-3">
+                <div class="flex items-center gap-2">
+                  <span class="text-xl" x-text="row.subject.emoji"></span>
+                  <p class="font-bold flex-1" x-text="row.subject.name + (row.avg != null ? ' · ' + row.avg + '%' : '')"></p>
+                  <span class="badge border-0 font-bold gap-1"
+                        :class="{ 'bg-green-100 text-green-800': row.status==='up', 'bg-amber-100 text-amber-800': row.status==='help', 'bg-sky-100 text-sky-800': row.status==='ok', 'bg-slate-200 text-slate-700': row.status==='none' }"
+                        x-text="({ up: '📈 ', help: '🤝 ', ok: '✓ ', none: '• ' })[row.status] + row.label"></span>
+                </div>
+                <p class="text-sm text-slate-600 mt-1" x-text="row.tip"></p>
+              </div>
+            </template>
+          </div>
+        </section>
+
+        <!-- Recent badges -->
+        <section class="bg-white rounded-2xl border border-slate-200 p-4">
+          <h2 class="font-bold">Recent badges</h2>
+          <div class="grid grid-cols-2 gap-2 mt-3">
+            <template x-for="id in student.badges.slice().reverse().slice(0, 4)" :key="id">
+              <div class="flex items-center gap-2 rounded-xl bg-amber-50 p-3">
+                <span class="text-3xl" x-text="badge(id).emoji"></span>
+                <div><p class="font-bold text-sm" x-text="badge(id).name"></p><p class="text-xs text-slate-600" x-text="badge(id).desc"></p></div>
+              </div>
+            </template>
+          </div>
+        </section>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-4">
+        <!-- Privacy (RA 10173 data-subject rights) -->
+        <section class="bg-white rounded-2xl border border-slate-200 p-4">
+          <h2 class="font-bold flex items-center gap-2"><i data-lucide="lock" class="w-5 h-5"></i> Privacy &amp; your child’s data</h2>
+          <ul class="text-sm text-slate-700 mt-2 space-y-1">
+            <li>• Under the Data Privacy Act (RA 10173), you can access, correct, or delete your child’s data.</li>
+            <li>• We never sell student data and never show ads to children.</li>
+            <li>• No location, photos, or real names are collected.</li>
+          </ul>
+          <div class="flex flex-wrap gap-2 mt-3">
+            <button class="btn btn-sm btn-outline" @click="exportChildData()"><i data-lucide="download" class="w-4 h-4"></i> Download data</button>
+            <button class="btn btn-sm btn-ghost text-rose-700" @click="showResetModal=true"><i data-lucide="trash-2" class="w-4 h-4"></i> Delete data</button>
+          </div>
+        </section>
+
+        <!-- Plan (shown to parents only — never to kids) -->
+        <section class="bg-white rounded-2xl border border-slate-200 p-4">
+          <h2 class="font-bold flex items-center gap-2"><i data-lucide="sparkles" class="w-5 h-5"></i> Your plan</h2>
+          <p class="text-sm mt-2"><span class="badge bg-green-100 text-green-800 border-0 font-bold">Free plan</span> Core challenges in every subject.</p>
+          <p class="text-sm text-slate-700 mt-2">A Premium Family plan (more subjects and levels) is planned. Pricing is still being finalized. Purchase options appear only in this parent area, never in your child’s screens.</p>
+        </section>
+      </div>
+    </main>
+  </div>
+</template>
+
+<!-- ===================================================================
+     FOOTER (all screens except the challenge)
+     =================================================================== -->
+<footer x-show="screen!=='student-play'" class="text-xs text-center text-slate-600 px-4 pt-6 space-y-1"
+        :class="role==='student' ? 'pb-24' : (role==='teacher' ? 'pb-20 lg:pb-6 lg:pl-64 bg-slate-50' : (role==='parent' ? 'pb-6 bg-slate-50' : 'pb-6'))">
+  <p class="font-bold">Content aligned with the DepEd MATATAG curriculum (sample content). Not endorsed by DepEd.</p>
+  <p>Privacy: this prototype collects no personal data. Progress is saved only in this browser, in line with the Data Privacy Act of 2012 (RA 10173). No ads. No in-app purchases.</p>
+  <p>EduQuest prototype · EduTech Innovators · <button class="link font-bold" @click="showResetModal=true">Reset demo</button></p>
+</footer>
+
+<!-- ===================================================================
+     MODALS + TOAST
+     =================================================================== -->
+
+<!-- Break reminder (screen-time limit reached) -->
+<div class="modal" :class="{ 'modal-open': showBreak }" role="dialog" aria-modal="true" x-cloak>
+  <div class="modal-box text-center rounded-3xl">
+    <p class="text-6xl anim-float">🌿</p>
+    <h2 class="font-display text-3xl font-bold mt-2">Time for a break!</h2>
+    <p class="mt-2 text-slate-700">You learned for <b x-text="todayMinutes() || 1"></b> minute(s) today — great job! Your brain grows stronger when you rest, too.</p>
+    <div class="grid grid-cols-3 gap-2 mt-4 text-sm font-bold">
+      <div class="bg-sky-50 rounded-2xl p-3"><p class="text-2xl">🚰</p>Drink water</div>
+      <div class="bg-green-50 rounded-2xl p-3"><p class="text-2xl">🤸</p>Stretch</div>
+      <div class="bg-amber-50 rounded-2xl p-3"><p class="text-2xl">👀</p>Look far away</div>
+    </div>
+    <button class="btn btn-primary btn-lg btn-block mt-5 btn-3d" @click="takeBreak()">Okay, I’ll take a break!</button>
+    <button class="btn btn-ghost btn-sm mt-2" @click="parentExtend()">Parent: 5 more minutes</button>
+  </div>
+</div>
+
+<!-- Avatar + nickname picker -->
+<div class="modal" :class="{ 'modal-open': showAvatarModal }" role="dialog" aria-modal="true" x-cloak>
+  <div class="modal-box rounded-3xl">
+    <h2 class="font-display text-2xl font-bold">Choose your avatar</h2>
+    <div class="grid grid-cols-4 gap-3 mt-4">
+      <template x-for="seed in data.avatarSeeds" :key="seed">
+        <button @click="avatarDraft.avatar = seed; Sound.click()" class="rounded-full p-1 border-4" :class="avatarDraft.avatar===seed ? 'border-brand' : 'border-transparent'" :aria-label="'Avatar ' + seed">
+          <img :src="avatarUrl(seed)" class="w-full aspect-square rounded-full bg-slate-100" alt="">
+        </button>
+      </template>
+    </div>
+    <label class="form-control mt-4">
+      <span class="label-text font-bold mb-1">Nickname</span>
+      <input x-model="avatarDraft.nickname" maxlength="12" class="input input-bordered">
+      <span class="text-xs text-slate-500 mt-1">🛡️ Use a fun nickname — never your full real name.</span>
+    </label>
+    <div class="modal-action">
+      <button class="btn btn-ghost" @click="showAvatarModal=false">Cancel</button>
+      <button class="btn btn-primary" @click="saveAvatar()">Save</button>
+    </div>
+  </div>
+  <div class="modal-backdrop" @click="showAvatarModal=false"></div>
+</div>
+
+<!-- Assign to class -->
+<div class="modal" :class="{ 'modal-open': !!assignDraft }" role="dialog" aria-modal="true" x-cloak>
+  <template x-if="assignDraft">
+    <div class="modal-box rounded-3xl">
+      <h2 class="font-display text-2xl font-bold">Assign to class</h2>
+      <p class="mt-1 text-slate-600"><b x-text="assignDraft.title"></b> → <span x-text="data.className"></span></p>
+      <label class="form-control mt-4">
+        <span class="label-text font-bold mb-1">Due date</span>
+        <input type="date" x-model="assignDraft.due" :min="Util.dayKey(0)" class="input input-bordered">
+      </label>
+      <p class="text-xs text-slate-500 mt-2">It will appear on every student’s home screen.</p>
+      <div class="modal-action">
+        <button class="btn btn-ghost" @click="assignDraft=null">Cancel</button>
+        <button class="btn btn-primary" @click="saveAssignment()">Assign</button>
+      </div>
+    </div>
+  </template>
+  <div class="modal-backdrop" @click="assignDraft=null"></div>
+</div>
+
+<!-- Preview a quest's questions -->
+<div class="modal" :class="{ 'modal-open': !!previewQuiz }" role="dialog" aria-modal="true" x-cloak>
+  <template x-if="previewQuiz">
+    <div class="modal-box rounded-3xl max-w-2xl">
+      <h2 class="font-display text-2xl font-bold" x-text="previewQuiz.title"></h2>
+      <p class="text-sm text-slate-600" x-text="(previewQuiz.code || 'Teacher-made') + ' · ' + previewQuiz.questions.length + ' questions'"></p>
+      <ol class="mt-4 space-y-3">
+        <template x-for="(q, i) in previewQuiz.questions" :key="i">
+          <li class="rounded-xl bg-slate-50 p-3">
+            <p class="font-bold"><span x-text="(i + 1) + '. ' + q.question"></span> <span class="badge badge-sm capitalize" x-text="q.difficulty"></span></p>
+            <ul class="mt-1 text-sm grid sm:grid-cols-2 gap-x-4">
+              <template x-for="(c, ci) in q.choices" :key="ci"><li :class="ci===q.answer ? 'text-green-700 font-extrabold' : 'text-slate-600'" x-text="(ci===q.answer ? '✓ ' : '• ') + c"></li></template>
+            </ul>
+            <p class="text-xs text-slate-500 mt-1" x-text="'💡 ' + q.explain"></p>
+          </li>
+        </template>
+      </ol>
+      <div class="modal-action"><button class="btn" @click="previewQuiz=null">Close</button></div>
+    </div>
+  </template>
+  <div class="modal-backdrop" @click="previewQuiz=null"></div>
+</div>
+
+<!-- Reset demo confirmation -->
+<div class="modal" :class="{ 'modal-open': showResetModal }" role="dialog" aria-modal="true" x-cloak>
+  <div class="modal-box rounded-3xl">
+    <h2 class="font-display text-2xl font-bold">Reset the demo?</h2>
+    <p class="mt-2 text-slate-700">This deletes all saved progress, assignments, custom quizzes, and settings in this browser, and restores the starting demo data.</p>
+    <div class="modal-action">
+      <button class="btn btn-ghost" @click="showResetModal=false">Cancel</button>
+      <button class="btn btn-error" @click="resetDemo()">Reset everything</button>
+    </div>
+  </div>
+  <div class="modal-backdrop" @click="showResetModal=false"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast toast-top toast-center z-[60]" x-show="toastMsg" x-transition x-cloak>
+  <div class="alert bg-neutral text-neutral-content shadow-lg font-bold"><span x-text="toastMsg"></span></div>
+</div>
+
+<!-- ===================================================================
+     LIBRARIES (CDN) + OUR SCRIPTS (order matters: data → store → … → app)
+     =================================================================== -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/quiz.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/live.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
