@@ -3,7 +3,8 @@
    ---------------------------------------------------------------------
    index.html uses <body x-data="app()">. This file builds that object
    by merging the core below with the mixins from:
-     quiz.js (challenge engine) · live.js (live game) · dashboard.js
+     quiz.js (challenge engine) · live.js (live game) · dashboard.js ·
+     battle.js (Monster Battle)
    Routes use the URL hash, e.g. #/student/subject/math, so the site
    works from a file and from a GitHub Pages subfolder.
    ===================================================================== */
@@ -77,6 +78,7 @@ function app() {
       if (prev === 'student-play' && screen !== 'student-play') { this.stopQuizTimer(); if (this.quiz) this.quiz.phase = 'done'; }
       if (prev === 'teacher-live' && screen !== 'teacher-live') this.liveCleanup();
       if (prev === 'student-join' && screen !== 'student-join') this.playerLeave();
+      if (prev === 'student-battle' && screen !== 'student-battle') this.leaveFight();
 
       // Guard: results need a finished challenge
       if (screen === 'student-results' && !this.results) { this.go('#/student'); return; }
@@ -411,5 +413,5 @@ function app() {
     }
   };
 
-  return mergeMixins(core, quizMixin(), dashboardMixin(), liveMixin());
+  return mergeMixins(core, quizMixin(), dashboardMixin(), liveMixin(), battleMixin());
 }

@@ -47,6 +47,7 @@ const Sound = (() => {
     correct() { [523, 659, 784].forEach((f, i) => tone(f, i * 0.09, 0.18, 'triangle', 0.18)); },
     // Wrong answers get a soft, gentle sound — never a harsh buzzer.
     wrong() { tone(392, 0, 0.18, 'sine', 0.12); tone(330, 0.16, 0.28, 'sine', 0.12); },
+    hit() { tone(180, 0, 0.12, 'square', 0.1); tone(120, 0.05, 0.15, 'sawtooth', 0.06); },
     pop() { tone(500, 0, 0.06, 'sine', 0.1); tone(750, 0.05, 0.08, 'sine', 0.1); },
     fanfare() {
       [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.12, 0.3, 'triangle', 0.16));
