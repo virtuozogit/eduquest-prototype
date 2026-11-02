@@ -81,7 +81,7 @@ function dashboardMixin() {
           ...st,
           completedPct: Math.round((100 * tried.length) / quests.length),
           avgScore: tried.length ? Math.round(Util.avg(tried.map(q => st.mastery[q.id]))) : null,
-          weakest: weakest ? { code: weakest.code, short: weakest.short, score: st.mastery[weakest.id] } : null,
+          weakest: weakest ? { short: weakest.short, score: st.mastery[weakest.id] } : null,
           challenges: Object.values(st.attempts).reduce((s, n) => s + n, 0)
         };
       });

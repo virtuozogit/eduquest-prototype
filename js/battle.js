@@ -1,16 +1,18 @@
 /* =====================================================================
-   battle.js — Monster Battle: an idle "auto-clicker" RPG powered by quiz
+   battle.js — BattleQuest: an RPG powered by quiz questions
    ---------------------------------------------------------------------
    How it works:
      - Each STAGE has a monster (every 5th stage is a boss).
      - Answer multiple-choice questions. A CORRECT answer = your hero
-       attacks. Correct answers in a row build a COMBO.
-     - While your combo is alive, your hero also AUTO-ATTACKS every
-       second (the "auto-clicker" part). A wrong answer ends the combo.
+       attacks. Correct answers in a row build a COMBO (more damage).
+     - Every attack has a chance to be a CRITICAL HIT (double damage).
+       The crit chance comes from your equipped WEAPON.
      - The monster fills an attack meter and hits you when it's full,
-       and also hits you when you answer wrong.
-     - Beat the monster → LOOT (sword, shield, armor) + XP + next stage.
-   Gear stats:  weapon → ATK   shield → DEF   armor → max HP
+       and also hits you when you answer wrong (which ends the combo).
+     - Beat the monster → LOOT (weapon, shield, armor) + XP + next stage.
+     - All loot goes into the LOOT BAG (#/student/battle/bag), where you
+       can compare and equip gear.
+   Gear stats:  weapon → ATK + CRIT %   shield → DEF   armor → max HP
    Contains:
      1. Settings  2. Monsters + loot tables  3. BattleRules
      4. battleMixin() — Alpine state + methods. app.js merges it in.
@@ -19,8 +21,9 @@
 /* 1. SETTINGS ------------------------------------------------------- */
 const HERO_BASE_ATK = 10;
 const HERO_BASE_HP = 100;
+const HERO_BASE_CRIT = 0;            // crit % with no weapon (weapons add to this)
+const CRIT_MULT = 2;                 // a critical hit does double damage
 const MONSTER_ATTACK_SECONDS = 15;   // monster hits you when its meter fills
-const AUTO_ATTACK_SECONDS = 1;       // auto-attack speed while combo is alive
 const BOSS_EVERY = 5;                // every 5th stage is a boss
 const INVENTORY_LIMIT = 24;          // oldest unequipped items are dropped past this
 
@@ -48,14 +51,26 @@ const RARITIES = {
 };
 
 // stat = which hero stat the slot boosts; base = value of a common item at stage 1
+// (Weapon names come from the WEAPONS list below.)
 const SLOTS = {
-  weapon: { label: 'Sword', stat: 'ATK', base: 3, emoji: '🗡️',
-    names: { common: 'Bamboo Sword', rare: 'Iron Bolo', epic: 'Kampilan of Courage', legendary: 'Sunfire Kampilan' } },
+  weapon: { label: 'Weapon', stat: 'ATK', base: 3, emoji: '⚔️' },
   shield: { label: 'Shield', stat: 'DEF', base: 2, emoji: '🛡️',
     names: { common: 'Rattan Shield', rare: 'Narra Kalasag', epic: 'Moonstone Kalasag', legendary: 'Dragon Scale Kalasag' } },
   armor: { label: 'Armor', stat: 'HP', base: 15, emoji: '🥋',
     names: { common: 'Abaca Vest', rare: 'Carabao Leather Armor', epic: 'Pearl Mail', legendary: 'Golden Sun Armor' } }
 };
+
+// Weapon types. A dropped weapon picks one at random.
+const WEAPONS = [
+  { type: 'Sword', emoji: '🗡️', names: { common: 'Bamboo Sword', rare: 'Iron Bolo', epic: 'Kampilan of Courage', legendary: 'Sunfire Kampilan' } },
+  { type: 'Bow', emoji: '🏹', names: { common: 'Rattan Bow', rare: 'Hunter’s Longbow', epic: 'Moonlight Bow', legendary: 'Bow of the Stars' } },
+  { type: 'Spear', emoji: '🔱', names: { common: 'Fishing Spear', rare: 'Iron Sibat', epic: 'Storm Sibat', legendary: 'Trident of the Deep' } },
+  { type: 'Hammer', emoji: '🔨', names: { common: 'Wooden Mallet', rare: 'Blacksmith Hammer', epic: 'Thunder Hammer', legendary: 'Mountain Breaker' } },
+  { type: 'Staff', emoji: '🪄', names: { common: 'Narra Staff', rare: 'Crystal Wand', epic: 'Babaylan Staff', legendary: 'Staff of the Sun' } }
+];
+
+// Critical hit % a weapon can roll, by rarity: [min, max]
+const CRIT_RANGE = { common: [3, 6], rare: [6, 10], epic: [10, 15], legendary: [15, 22] };
 
 /* 3. RULES ------------------------------------------------------------ */
 const BattleRules = {
@@ -79,8 +94,8 @@ const BattleRules = {
   // Combo multiplier: ×1.0, ×1.25, ×1.5 ... max ×2.5
   comboMult(combo) { return Math.min(1 + 0.25 * Math.max(0, combo - 1), 2.5); },
 
-  // Auto-attack hits for 20% of ATK, boosted by the combo (at least 1)
-  autoDamage(atk, combo) { return Math.max(1, Math.round(atk * 0.2 * this.comboMult(combo))); },
+  // Roll for a critical hit using the hero's crit % (0–100)
+  rollCrit(critPercent) { return Math.random() * 100 < critPercent; },
 
   // Bosses always drop Rare or better
   rollRarity(boss) {
@@ -93,12 +108,18 @@ const BattleRules = {
     const slot = Util.pick(Object.keys(SLOTS));
     const rarity = this.rollRarity(boss);
     const s = SLOTS[slot];
-    return {
+    const item = {
       id: 'it-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-      slot, rarity, emoji: s.emoji, name: s.names[rarity],
+      slot, rarity, emoji: s.emoji, name: s.names?.[rarity],
       power: Math.round(s.base * RARITIES[rarity].mult * (1 + 0.2 * (stage - 1))),
       stage
     };
+    if (slot === 'weapon') {
+      const kind = Util.pick(WEAPONS);
+      const [min, max] = CRIT_RANGE[rarity];
+      Object.assign(item, { type: kind.type, emoji: kind.emoji, name: kind.names[rarity], crit: min + Math.floor(Math.random() * (max - min + 1)) });
+    }
+    return item;
   },
 
   // XP for beating a monster (feeds the normal student level)
@@ -106,9 +127,16 @@ const BattleRules = {
 };
 
 function defaultBattle() {
-  const stick = { id: 'it-start-1', slot: 'weapon', rarity: 'common', emoji: '🗡️', name: 'Training Stick', power: 2, stage: 1 };
+  const stick = { id: 'it-start-1', slot: 'weapon', type: 'Staff', rarity: 'common', emoji: '🪵', name: 'Training Stick', power: 2, crit: 5, stage: 1 };
   const shirt = { id: 'it-start-2', slot: 'armor', rarity: 'common', emoji: '🥋', name: 'Cotton Shirt', power: 10, stage: 1 };
   return { stage: 1, best: 1, wins: 0, inventory: [stick, shirt], equipped: { weapon: stick.id, shield: null, armor: shirt.id } };
+}
+
+// Load the saved hero. Weapons saved before crit % existed get 5%.
+function loadHero() {
+  const hero = Store.get('battle', null) || defaultBattle();
+  hero.inventory.forEach(it => { if (it.slot === 'weapon' && it.crit == null) it.crit = 5; });
+  return hero;
 }
 
 /* 4. ALPINE MIXIN -----------------------------------------------------
@@ -118,7 +146,7 @@ let battleTimer = null;
 
 function battleMixin() {
   return {
-    hero: Store.get('battle', null) || defaultBattle(),
+    hero: loadHero(),
     battleSubject: 'all',
     fight: null,      // the fight in progress (null or phase 'done' = at camp)
     lootFilter: 'all',
@@ -132,9 +160,41 @@ function battleMixin() {
     heroAtk() { return HERO_BASE_ATK + this.gearPower('weapon'); },
     heroDef() { return this.gearPower('shield'); },
     heroMaxHp() { return HERO_BASE_HP + this.gearPower('armor'); },
+    heroCrit() { return HERO_BASE_CRIT + (this.equippedItem('weapon')?.crit || 0); },
     isEquipped(item) { return this.hero.equipped[item.slot] === item.id; },
     // +/- compared with what is equipped in the same slot
     gearDiff(item) { return item.power - this.gearPower(item.slot); },
+    critDiff(item) { return (item.crit || 0) - (this.equippedItem('weapon')?.crit || 0); },
+    // "+6 ATK · 8% CRIT" for weapons, "+4 DEF" / "+20 HP" for the others
+    itemStats(item) {
+      return '+' + item.power + ' ' + SLOTS[item.slot].stat + (item.slot === 'weapon' ? ' · ' + (item.crit || 0) + '% CRIT' : '');
+    },
+    // Short "is it better?" note for the loot cards
+    compareText(item) {
+      const parts = [];
+      const d = this.gearDiff(item);
+      if (d) parts.push((d > 0 ? '▲' : '▼') + Math.abs(d) + ' ' + SLOTS[item.slot].stat);
+      if (item.slot === 'weapon') {
+        const c = this.critDiff(item);
+        if (c) parts.push((c > 0 ? '▲' : '▼') + Math.abs(c) + '% CRIT');
+      }
+      return parts.length ? parts.join(' · ') : 'Same as yours';
+    },
+    // Green "upgrade" only when nothing gets worse (a weapon with more ATK but
+    // less CRIT is a trade-off, not an upgrade)
+    isUpgrade(item) {
+      const d = this.gearDiff(item);
+      if (item.slot !== 'weapon') return d > 0;
+      const c = this.critDiff(item);
+      return d >= 0 && c >= 0 && (d > 0 || c > 0);
+    },
+
+    // Open the loot bag (also from the victory/defeat screen)
+    openLootBag() {
+      Sound.click();
+      this.leaveFight();
+      this.go('#/student/battle/bag');
+    },
 
     equip(item) {
       this.hero.equipped[item.slot] = item.id;
@@ -183,7 +243,7 @@ function battleMixin() {
         hp: this.heroMaxHp(), maxHp: this.heroMaxHp(),
         deck: this.battlePool(stage), question: null, chosen: null,
         phase: 'intro', combo: 0, bestCombo: 0, correct: 0, answered: 0,
-        meter: 0, autoClock: 0, autoTotal: 0,
+        meter: 0, crits: 0,
         floats: [], heroAnim: '', monsterAnim: '', message: '',
         loot: null, xpGained: 0, levelUp: false
       };
@@ -204,18 +264,6 @@ function battleMixin() {
       const f = this.fight;
       if (!f || f.phase !== 'question' || this.showBreak) return;
 
-      // AUTO-ATTACK: only while the combo is alive
-      if (f.combo > 0) {
-        f.autoClock += dt;
-        if (f.autoClock >= AUTO_ATTACK_SECONDS) {
-          f.autoClock = 0;
-          const dmg = BattleRules.autoDamage(this.heroAtk(), f.combo);
-          f.autoTotal += dmg;
-          this.damageMonster(dmg, 'auto');
-          if (f.monster.hp <= 0) return;
-        }
-      }
-
       // MONSTER METER: when full, the monster attacks
       f.meter += dt;
       if (f.meter >= MONSTER_ATTACK_SECONDS) {
@@ -235,8 +283,10 @@ function battleMixin() {
         f.combo++;
         f.correct++;
         f.bestCombo = Math.max(f.bestCombo, f.combo);
-        const crit = Math.random() < 0.1;
-        const dmg = Math.round(this.heroAtk() * BattleRules.comboMult(f.combo) * (crit ? 1.5 : 1));
+        // Critical hit chance comes from the equipped weapon
+        const crit = BattleRules.rollCrit(this.heroCrit());
+        if (crit) f.crits++;
+        const dmg = Math.round(this.heroAtk() * BattleRules.comboMult(f.combo) * (crit ? CRIT_MULT : 1));
         f.message = (crit ? 'CRITICAL HIT! ' : '') + Util.pick(EQ_DATA.cheers);
         f.phase = 'hit';
         this.playAnim('heroAnim', 'anim-lunge');
@@ -246,7 +296,6 @@ function battleMixin() {
         if (f.monster.hp > 0) setTimeout(() => { if (this.fight === f && f.phase === 'hit') this.nextBattleQuestion(); }, 750);
       } else {
         f.combo = 0;
-        f.autoClock = 0;
         f.message = Util.pick(EQ_DATA.encouragements);
         f.phase = 'feedback';
         Sound.wrong();

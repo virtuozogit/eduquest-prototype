@@ -142,7 +142,7 @@ body { background: #F6F4FD; -webkit-tap-highlight-color: transparent; }
 .heat-low  { background: #E11D48; color: #fff; }
 .heat-none { background: #F1F5F9; color: #94A3B8; }
 
-/* ---------- Monster Battle ---------- */
+/* ---------- BattleQuest ---------- */
 .battle-bg {
   background: radial-gradient(circle at 85% 0%, #E11D48 0, transparent 40%),
               radial-gradient(circle at 0% 100%, #5B3FD9 0, transparent 55%),
@@ -166,7 +166,6 @@ body { background: #F6F4FD; -webkit-tap-highlight-color: transparent; }
 }
 .float-hit  { color: #FDE68A; }
 .float-crit { color: #FB923C; font-size: 2.2rem; }
-.float-auto { color: #A7F3D0; font-size: 1.1rem; }
 .float-hurt { color: #FDA4AF; }
 
 /* Loot cards: border color = rarity (the rarity name is also written on the card) */

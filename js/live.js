@@ -243,14 +243,14 @@ function liveMixin() {
       p.error = '';
       if (!this.liveSupported()) { p.error = 'This browser does not support live games (BroadcastChannel).'; return; }
       if (!/^\d{6}$/.test(p.pin.trim())) { p.error = 'The game PIN has 6 numbers.'; return; }
-      if (!p.nickname.trim()) { p.error = 'Type a nickname first.'; return; }
+      p.nickname = this.student.nickname; // play under the student's own profile name
       p.pin = p.pin.trim();
       p.id = 'p-' + Math.random().toString(36).slice(2, 9);
       p.phase = 'connecting';
       if (playerChannel) playerChannel.close();
       playerChannel = new BroadcastChannel(CHANNEL_NAME);
       playerChannel.onmessage = e => this.playerOnMessage(e.data);
-      playerChannel.postMessage({ type: 'join', pin: p.pin, playerId: p.id, nickname: p.nickname.trim(), avatar: this.student.avatar });
+      playerChannel.postMessage({ type: 'join', pin: p.pin, playerId: p.id, nickname: p.nickname, avatar: this.student.avatar });
       setTimeout(() => {
         if (p.phase === 'connecting') {
           p.phase = 'form';

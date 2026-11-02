@@ -4,7 +4,7 @@
    index.html uses <body x-data="app()">. This file builds that object
    by merging the core below with the mixins from:
      quiz.js (challenge engine) · live.js (live game) · dashboard.js ·
-     battle.js (Monster Battle)
+     battle.js (BattleQuest)
    Routes use the URL hash, e.g. #/student/subject/math, so the site
    works from a file and from a GitHub Pages subfolder.
    ===================================================================== */
@@ -89,7 +89,6 @@ function app() {
       window.scrollTo(0, 0);
 
       if (screen === 'student-play') this.startChallenge(param);
-      if (screen === 'student-join' && !this.player.nickname) this.player.nickname = this.student.nickname;
       if (screen === 'teacher-dashboard') this.$nextTick(() => this.drawTeacherCharts());
       if (screen === 'parent') this.$nextTick(() => this.drawParentCharts());
     },
@@ -289,12 +288,12 @@ function app() {
     libraryItems() {
       const search = this.librarySearch.trim().toLowerCase();
       const builtIn = this.allQuests().map(q => ({ ...q, custom: false }));
-      const mine = this.customQuizzes.map(q => ({ ...q, custom: true, subject: this.subject(q.subjectId), code: 'Teacher-made', competency: 'Custom quiz by ' + EQ_DATA.teacherName }));
+      const mine = this.customQuizzes.map(q => ({ ...q, custom: true, subject: this.subject(q.subjectId), competency: 'Custom quiz by ' + EQ_DATA.teacherName }));
       return [...builtIn, ...mine].filter(item => {
         if (this.libraryFilter === 'mine' && !item.custom) return false;
         if (!['all', 'mine'].includes(this.libraryFilter) && item.subjectId !== this.libraryFilter) return false;
         if (!search) return true;
-        return (item.title + ' ' + item.code + ' ' + item.competency).toLowerCase().includes(search);
+        return (item.title + ' ' + item.competency).toLowerCase().includes(search);
       });
     },
     difficultyMix(questions) {

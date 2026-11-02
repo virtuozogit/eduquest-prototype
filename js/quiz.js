@@ -145,7 +145,7 @@ function quizMixin() {
       const questions = src.custom ? Util.shuffle(src.questions) : Adaptive.pick(src.questions, mode);
 
       this.quiz = {
-        id, custom: !!src.custom, title: src.title, code: src.code || 'Teacher quiz',
+        id, custom: !!src.custom, title: src.title,
         subjectId: src.subjectId, mode, questions,
         index: 0, phase: 'getready', countdown: 3, timeLeft: QUIZ_TIME,
         chosen: null, score: 0, streak: 0, bestStreak: 0, correct: 0,
@@ -260,7 +260,7 @@ function quizMixin() {
       }
 
       const result = {
-        id: quiz.id, title: quiz.title, code: quiz.code, custom: quiz.custom, subjectId: quiz.subjectId,
+        id: quiz.id, title: quiz.title, custom: quiz.custom, subjectId: quiz.subjectId,
         score: quiz.score, correct: quiz.correct, total, accuracy, stars, xpGained,
         bestStreak: quiz.bestStreak,
         avgTime: Util.avg(quiz.answers.map(a => a.time)),

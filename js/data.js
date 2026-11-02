@@ -2,8 +2,8 @@
    data.js — ALL editable content for the EduQuest prototype
    ---------------------------------------------------------------------
    - Grade 4 sample content for Mathematics, Science, and English.
-   - Competency codes are SAMPLE codes written in a MATATAG-like style.
-     They are NOT official DepEd codes.
+   - Each quest has a "competency": what the student should learn,
+     written in the style of the MATATAG curriculum (sample content).
    - Each quest has a short lesson and 9 questions (3 easy, 3 medium,
      3 hard). A challenge picks 6 of them (see Adaptive in quiz.js).
    - To add a question, copy a Q(...) line and change the text.
@@ -35,7 +35,6 @@ const EQ_DATA = {
           id: 'math-1',
           title: 'Place Value Peaks',
           short: 'Place Value',
-          code: 'M4NS-Ia-1',
           competency: 'Reads, writes, and identifies the place value of digits in numbers up to 100,000.',
           lesson: [
             'Every digit in a number has a <b>place</b>. Its place tells us how much it is worth.',
@@ -59,7 +58,6 @@ const EQ_DATA = {
           id: 'math-2',
           title: 'Multiplication Mountain',
           short: 'Multiply',
-          code: 'M4NS-Ib-2',
           competency: 'Multiplies 2- to 3-digit numbers by 1- to 2-digit numbers with and without regrouping.',
           lesson: [
             'Multiplication is fast adding: <b>4 × 23</b> means 23 + 23 + 23 + 23.',
@@ -83,7 +81,6 @@ const EQ_DATA = {
           id: 'math-3',
           title: 'Fraction Forest',
           short: 'Fractions',
-          code: 'M4NS-Ic-3',
           competency: 'Identifies, compares, and finds equivalent fractions.',
           lesson: [
             'A <b>fraction</b> shows part of a whole. In <b>3/4</b>, the bottom number (denominator) tells how many equal parts. The top number (numerator) tells how many parts we take.',
@@ -107,7 +104,6 @@ const EQ_DATA = {
           id: 'math-4',
           title: 'Perimeter Plains',
           short: 'Perimeter',
-          code: 'M4ME-Id-4',
           competency: 'Finds the perimeter of triangles, squares, rectangles, and other polygons.',
           lesson: [
             '<b>Perimeter</b> is the distance around a shape. Add the lengths of all its sides.',
@@ -144,7 +140,6 @@ const EQ_DATA = {
           id: 'sci-1',
           title: 'Matter Lab',
           short: 'States of Matter',
-          code: 'S4MT-Ia-1',
           competency: 'Classifies materials as solid, liquid, or gas and describes how heating and cooling change them.',
           lesson: [
             'Everything around you is <b>matter</b> — it has mass and takes up space.',
@@ -167,7 +162,6 @@ const EQ_DATA = {
           id: 'sci-2',
           title: 'Living Things Jungle',
           short: 'Plant Parts',
-          code: 'S4LT-IIa-2',
           competency: 'Identifies the main parts of plants and describes their functions.',
           lesson: [
             '<b>Roots</b> hold the plant in the soil and absorb water and minerals.',
@@ -191,7 +185,6 @@ const EQ_DATA = {
           id: 'sci-3',
           title: 'Weather Watch',
           short: 'Weather',
-          code: 'S4ES-IIIa-3',
           competency: 'Describes weather conditions, uses simple weather instruments, and practices typhoon safety.',
           lesson: [
             '<b>Weather</b> is what the air is like at a certain place and time: sunny, cloudy, rainy, windy, or stormy.',
@@ -228,7 +221,6 @@ const EQ_DATA = {
           id: 'eng-1',
           title: 'Noun Town',
           short: 'Nouns',
-          code: 'EN4G-Ia-1',
           competency: 'Identifies and uses common, proper, singular, and plural nouns.',
           lesson: [
             'A <b>noun</b> names a person, place, animal, thing, or idea: teacher, Manila, carabao, ball, kindness.',
@@ -252,7 +244,6 @@ const EQ_DATA = {
           id: 'eng-2',
           title: 'Verb Valley',
           short: 'Verbs & Tense',
-          code: 'EN4G-Ib-2',
           competency: 'Uses verbs that agree with the subject in the simple present and simple past tense.',
           lesson: [
             'A <b>verb</b> shows action or being: jump, eat, is, are.',
@@ -276,7 +267,6 @@ const EQ_DATA = {
           id: 'eng-3',
           title: 'Reading Reef',
           short: 'Context Clues',
-          code: 'EN4RC-Ic-3',
           competency: 'Uses context clues to find word meanings and identifies the main idea of a short text.',
           lesson: [
             '<b>Context clues</b> are hints in a sentence that help you guess a new word’s meaning.',

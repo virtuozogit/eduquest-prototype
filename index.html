@@ -105,13 +105,18 @@
       <div class="max-w-3xl mx-auto px-4 h-14 flex items-center gap-2">
         <a href="#/student" class="flex items-center gap-2 shrink-0">
           <span x-html="logo('w-8 h-8')"></span>
-          <span class="font-display font-bold text-xl text-brand hidden min-[380px]:inline">EduQuest</span>
+          <span class="font-display font-bold text-xl text-brand hidden sm:inline">EduQuest</span>
         </a>
-        <div class="ml-auto flex items-center gap-1.5">
-          <span class="badge badge-lg bg-brand-light border-0 text-brand font-extrabold gap-1" title="Level">⭐ <span x-text="'Lv ' + level()"></span></span>
-          <span class="badge badge-lg bg-orange-100 border-0 text-orange-700 font-extrabold gap-1" title="Daily streak">🔥 <span x-text="streakCount()"></span></span>
-          <button class="btn btn-ghost btn-sm btn-square" @click="toggleSound()" :aria-label="settings.sound ? 'Mute sounds' : 'Turn sounds on'">
+        <div class="ml-auto flex items-center gap-1.5 min-w-0">
+          <span class="badge badge-lg bg-brand-light border-0 text-brand font-extrabold gap-1 shrink-0" title="Level">⭐ <span x-text="'Lv ' + level()"></span></span>
+          <span class="badge badge-lg bg-orange-100 border-0 text-orange-700 font-extrabold gap-1 shrink-0" title="Daily streak">🔥 <span x-text="streakCount()"></span></span>
+          <button class="btn btn-ghost btn-sm btn-square shrink-0" @click="toggleSound()" :aria-label="settings.sound ? 'Mute sounds' : 'Turn sounds on'">
             <span x-html="icon(settings.sound ? 'volume-2' : 'volume-x')"></span>
+          </button>
+          <!-- Profile: name + avatar (tap to change) -->
+          <button class="flex items-center gap-2 rounded-full bg-slate-100 hover:bg-slate-200 pl-1 pr-3 py-1 min-w-0" @click="openAvatarModal()" aria-label="Change avatar and nickname">
+            <img :src="avatarUrl(student.avatar)" class="w-8 h-8 rounded-full bg-white shrink-0" alt="">
+            <span class="font-extrabold text-sm truncate max-w-[6rem]" x-text="student.nickname"></span>
           </button>
         </div>
       </div>
@@ -126,7 +131,7 @@
               <i data-lucide="x" class="w-5 h-5"></i>
             </button>
             <div class="min-w-0">
-              <p class="text-xs text-white/70 font-bold truncate" x-text="quiz.code"></p>
+              <p class="text-xs text-white/70 font-bold truncate" x-text="quiz.custom ? 'Teacher quiz' : subject(quiz.subjectId).name"></p>
               <p class="font-display font-bold truncate" x-text="quiz.title"></p>
             </div>
             <div class="ml-auto text-right shrink-0">
@@ -218,7 +223,7 @@
       </div>
     </template>
 
-    <!-- ===== MONSTER BATTLE: FIGHT (full screen) ===== -->
+    <!-- ===== BATTLEQUEST: FIGHT (full screen) ===== -->
     <template x-if="screen==='student-battle' && inFight()">
       <div class="fixed inset-0 z-40 battle-bg overflow-y-auto text-white">
         <div class="max-w-3xl mx-auto min-h-full flex flex-col px-4 py-4">
@@ -233,8 +238,8 @@
             <div class="ml-auto flex flex-wrap justify-end gap-1.5">
               <span class="badge border-0 font-extrabold" :class="fight.combo > 0 ? 'bg-orange-400 text-orange-950' : 'bg-white/15 text-white/70'"
                     x-text="fight.combo > 0 ? '🔥 Combo ' + fight.combo + ' · ×' + BattleRules.comboMult(fight.combo).toFixed(2) : 'No combo'"></span>
-              <span class="badge border-0 font-extrabold" :class="fight.combo > 0 ? 'bg-emerald-400 text-emerald-950' : 'bg-white/15 text-white/70'"
-                    x-text="fight.combo > 0 ? '⚙️ Auto-attack ON' : '⚙️ Auto-attack OFF'"></span>
+              <span class="badge border-0 font-extrabold bg-amber-300 text-amber-950" title="Critical hit chance from your weapon"
+                    x-text="'💥 ' + heroCrit() + '% crit'"></span>
             </div>
           </div>
 
@@ -249,6 +254,7 @@
               </div>
               <p class="font-display font-bold mt-1" x-text="student.nickname"></p>
               <p class="text-lg" aria-label="Equipped gear" x-text="['weapon','shield','armor'].map(s => equippedItem(s)?.emoji || '▫️').join(' ')"></p>
+              <p class="text-xs text-white/80 font-bold" x-text="'⚔️ ' + heroAtk() + ' ATK · 💥 ' + heroCrit() + '%'"></p>
               <div class="hp-bar mt-1"><div class="bg-emerald-400" :style="`width:${fight.hp / fight.maxHp * 100}%`"></div></div>
               <p class="text-xs font-extrabold mt-1" x-text="'❤️ ' + fight.hp + ' / ' + fight.maxHp"></p>
             </div>
@@ -275,7 +281,7 @@
             <div class="text-center mt-8 anim-bounce-in">
               <p class="font-display text-3xl font-bold" x-text="(fight.monster.boss ? '⚠️ ' : '') + 'A wild ' + fight.monster.name + ' appears!'"></p>
               <p class="text-white/80 mt-1" x-text="fight.monster.line"></p>
-              <p class="text-white/80 text-sm mt-4">Answer right to attack · keep a combo for auto-attacks · wrong answers let the monster hit you</p>
+              <p class="text-white/80 text-sm mt-4">Answer right to attack · build a combo for more damage · your weapon can land critical hits · wrong answers let the monster hit you</p>
             </div>
           </template>
 
@@ -314,18 +320,19 @@
           <template x-if="fight.phase==='victory'">
             <div class="mt-6 bg-white text-slate-900 rounded-3xl p-6 shadow-xl text-center anim-bounce-in">
               <p class="font-display text-3xl font-bold text-brand" x-text="fight.monster.name + ' defeated! 🏆'"></p>
-              <p class="text-slate-600 font-bold mt-1" x-text="fight.correct + ' of ' + fight.answered + ' correct · best combo ' + fight.bestCombo + ' · +' + fight.xpGained + ' XP' + (fight.levelUp ? ' · LEVEL UP!' : '')"></p>
+              <p class="text-slate-600 font-bold mt-1" x-text="fight.correct + ' of ' + fight.answered + ' correct · best combo ' + fight.bestCombo + ' · ' + fight.crits + (fight.crits === 1 ? ' crit' : ' crits') + ' · +' + fight.xpGained + ' XP' + (fight.levelUp ? ' · LEVEL UP!' : '')"></p>
               <p class="font-extrabold mt-5 text-sm uppercase tracking-wide text-slate-500">You found loot!</p>
               <div class="loot-card mx-auto mt-2" :class="RARITIES[fight.loot.rarity].cls">
                 <p class="text-5xl" x-text="fight.loot.emoji"></p>
                 <p class="font-display text-xl font-bold mt-1" x-text="fight.loot.name"></p>
                 <p class="text-xs font-extrabold uppercase" x-text="RARITIES[fight.loot.rarity].name + ' ' + SLOTS[fight.loot.slot].label"></p>
-                <p class="font-extrabold mt-1" x-text="'+' + fight.loot.power + ' ' + SLOTS[fight.loot.slot].stat"></p>
-                <p class="text-xs font-bold mt-1" x-show="!isEquipped(fight.loot)" :class="gearDiff(fight.loot) > 0 ? 'text-green-700' : 'text-slate-500'"
-                   x-text="gearDiff(fight.loot) > 0 ? '▲ ' + gearDiff(fight.loot) + ' better than yours' : 'Not better than what you have'"></p>
+                <p class="font-extrabold mt-1" x-text="itemStats(fight.loot)"></p>
+                <p class="text-xs font-bold mt-1" x-show="!isEquipped(fight.loot)" :class="isUpgrade(fight.loot) ? 'text-green-700' : 'text-slate-500'"
+                   x-text="'vs. yours: ' + compareText(fight.loot)"></p>
               </div>
               <button x-show="!isEquipped(fight.loot)" class="btn btn-secondary btn-sm mt-3" @click="equip(fight.loot)">Equip it</button>
               <p x-show="isEquipped(fight.loot)" class="text-green-700 font-extrabold text-sm mt-3">✓ Equipped</p>
+              <button class="btn btn-outline btn-sm mt-3 gap-1" @click="openLootBag()">🎒 Open loot bag</button>
               <div class="grid grid-cols-2 gap-3 mt-5">
                 <button class="btn btn-ghost" @click="leaveFight()">Back to camp</button>
                 <button class="btn btn-primary btn-3d" @click="nextFight()" x-text="'Stage ' + hero.stage + ' →'"></button>
@@ -338,7 +345,8 @@
             <div class="mt-6 bg-white text-slate-900 rounded-3xl p-6 shadow-xl text-center anim-bounce-in">
               <p class="text-5xl">🌱</p>
               <p class="font-display text-2xl font-bold mt-2" x-text="'The ' + fight.monster.name + ' was tough this time!'"></p>
-              <p class="text-slate-600 mt-1">Your gear is safe. Every question you tried made you stronger. Try again, or pick an earlier stage to find better loot.</p>
+              <p class="text-slate-600 mt-1">Your gear is safe. Every question you tried made you stronger. Try again, equip better gear from your loot bag, or pick an earlier stage to find better loot.</p>
+              <button class="btn btn-outline btn-sm mt-3 gap-1" @click="openLootBag()">🎒 Open loot bag</button>
               <div class="grid grid-cols-2 gap-3 mt-5">
                 <button class="btn btn-ghost" @click="leaveFight()">Back to camp</button>
                 <button class="btn btn-primary btn-3d" @click="nextFight()">Try again</button>
@@ -351,22 +359,23 @@
 
     <main class="max-w-3xl mx-auto px-4 pt-4 pb-6">
 
-      <!-- ===== MONSTER BATTLE: CAMP (stage picker, gear, inventory) ===== -->
-      <template x-if="screen==='student-battle'">
+      <!-- ===== BATTLEQUEST: CAMP (stage picker + your hero) ===== -->
+      <template x-if="screen==='student-battle' && param!=='bag'">
         <div class="space-y-5 anim-slide-up">
           <section class="rounded-3xl p-5 text-white battle-bg shadow-lg">
             <div class="flex items-center gap-4">
               <img :src="avatarUrl(student.avatar)" class="w-20 h-20 rounded-full bg-white/20 ring-4 ring-white/40 shrink-0" alt="Your hero">
               <div class="min-w-0">
-                <p class="text-white/80 text-sm font-bold">Monster Battle ⚔️</p>
+                <p class="text-white/80 text-sm font-bold">BattleQuest ⚔️</p>
                 <h1 class="font-display text-3xl font-bold truncate" x-text="student.nickname"></h1>
                 <p class="text-sm font-extrabold" x-text="hero.wins + ' monsters defeated · best stage ' + hero.best"></p>
               </div>
             </div>
-            <div class="grid grid-cols-3 gap-2 mt-4 text-center">
-              <div class="bg-white/15 rounded-2xl py-2"><p class="text-xl">⚔️</p><p class="font-extrabold" x-text="heroAtk() + ' ATK'"></p></div>
-              <div class="bg-white/15 rounded-2xl py-2"><p class="text-xl">🛡️</p><p class="font-extrabold" x-text="heroDef() + ' DEF'"></p></div>
-              <div class="bg-white/15 rounded-2xl py-2"><p class="text-xl">❤️</p><p class="font-extrabold" x-text="heroMaxHp() + ' HP'"></p></div>
+            <div class="grid grid-cols-4 gap-2 mt-4 text-center">
+              <div class="bg-white/15 rounded-2xl py-2"><p class="text-xl">⚔️</p><p class="font-extrabold text-sm" x-text="heroAtk() + ' ATK'"></p></div>
+              <div class="bg-white/15 rounded-2xl py-2"><p class="text-xl">💥</p><p class="font-extrabold text-sm" x-text="heroCrit() + '% CRIT'"></p></div>
+              <div class="bg-white/15 rounded-2xl py-2"><p class="text-xl">🛡️</p><p class="font-extrabold text-sm" x-text="heroDef() + ' DEF'"></p></div>
+              <div class="bg-white/15 rounded-2xl py-2"><p class="text-xl">❤️</p><p class="font-extrabold text-sm" x-text="heroMaxHp() + ' HP'"></p></div>
             </div>
             <div class="grid grid-cols-3 gap-2 mt-2">
               <template x-for="slot in ['weapon','shield','armor']" :key="slot">
@@ -376,6 +385,9 @@
                 </div>
               </template>
             </div>
+            <a href="#/student/battle/bag" class="btn btn-block mt-3 bg-white/15 border-0 text-white hover:bg-white/25 gap-2" @click="Sound.click()">
+              🎒 Open loot bag <span class="badge border-0 bg-sun text-brand-dark font-extrabold" x-text="hero.inventory.length"></span>
+            </a>
           </section>
 
           <!-- Stage picker -->
@@ -407,35 +419,75 @@
             <p class="font-extrabold text-brand">How to play</p>
             <ul class="mt-1 space-y-0.5">
               <li>✅ Right answer → your hero attacks. Answer in a row for a bigger <b>combo</b>.</li>
-              <li>⚙️ While your combo is alive, your hero <b>auto-attacks</b> every second.</li>
+              <li>💥 Every attack can be a <b>critical hit</b> (double damage). Your weapon sets the crit chance.</li>
               <li>💡 Wrong answer → the monster hits you, and you learn why.</li>
-              <li>🎁 Win → loot! Swords add ATK, shields add DEF, armor adds HP.</li>
+              <li>🎁 Win → loot! Weapons add ATK + CRIT %, shields add DEF, armor adds HP.</li>
             </ul>
           </section>
+        </div>
+      </template>
 
-          <!-- Inventory -->
+      <!-- ===== BATTLEQUEST: LOOT BAG (#/student/battle/bag) ===== -->
+      <template x-if="screen==='student-battle' && param==='bag'">
+        <div class="space-y-5 anim-slide-up">
+          <a href="#/student/battle" class="btn btn-ghost btn-sm gap-1 -ml-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to camp</a>
+
+          <section class="rounded-3xl p-5 text-white battle-bg shadow-lg">
+            <p class="text-white/80 text-sm font-bold">BattleQuest</p>
+            <h1 class="font-display text-3xl font-bold">🎒 Loot bag</h1>
+            <p class="text-sm font-extrabold" x-text="hero.inventory.length + (hero.inventory.length === 1 ? ' item' : ' items') + ' · tap Equip to swap gear'"></p>
+            <div class="grid grid-cols-4 gap-2 mt-4 text-center">
+              <div class="bg-white/15 rounded-2xl py-2"><p class="text-xl">⚔️</p><p class="font-extrabold text-sm" x-text="heroAtk() + ' ATK'"></p></div>
+              <div class="bg-white/15 rounded-2xl py-2"><p class="text-xl">💥</p><p class="font-extrabold text-sm" x-text="heroCrit() + '% CRIT'"></p></div>
+              <div class="bg-white/15 rounded-2xl py-2"><p class="text-xl">🛡️</p><p class="font-extrabold text-sm" x-text="heroDef() + ' DEF'"></p></div>
+              <div class="bg-white/15 rounded-2xl py-2"><p class="text-xl">❤️</p><p class="font-extrabold text-sm" x-text="heroMaxHp() + ' HP'"></p></div>
+            </div>
+          </section>
+
+          <!-- Equipped gear -->
+          <section>
+            <h2 class="font-display text-xl font-bold mb-2">Equipped</h2>
+            <div class="grid grid-cols-3 gap-3">
+              <template x-for="slot in ['weapon','shield','armor']" :key="slot">
+                <div class="loot-card" :class="equippedItem(slot) ? RARITIES[equippedItem(slot).rarity].cls : 'rarity-common opacity-60'">
+                  <p class="text-[11px] font-extrabold uppercase text-slate-500" x-text="SLOTS[slot].label"></p>
+                  <p class="text-3xl mt-1" x-text="equippedItem(slot)?.emoji || '▫️'"></p>
+                  <p class="font-display font-bold leading-tight text-sm mt-1" x-text="equippedItem(slot)?.name || 'Empty'"></p>
+                  <p class="text-xs font-extrabold mt-1" x-show="equippedItem(slot)" x-text="equippedItem(slot) ? itemStats(equippedItem(slot)) : ''"></p>
+                </div>
+              </template>
+            </div>
+          </section>
+
+          <!-- All items -->
           <section>
             <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
-              <h2 class="font-display text-xl font-bold" x-text="'Loot bag (' + hero.inventory.length + ')'"></h2>
-              <div class="flex gap-1">
+              <h2 class="font-display text-xl font-bold">All items</h2>
+              <div class="flex flex-wrap gap-1">
                 <template x-for="f in ['all','weapon','shield','armor']" :key="f">
-                  <button class="btn btn-xs rounded-full" :class="lootFilter===f ? 'btn-primary' : 'btn-ghost bg-white'" @click="lootFilter=f" x-text="f==='all' ? 'All' : SLOTS[f].emoji + ' ' + SLOTS[f].label"></button>
+                  <button class="btn btn-xs rounded-full" :class="lootFilter===f ? 'btn-primary' : 'btn-ghost bg-white'" @click="lootFilter=f" x-text="f==='all' ? 'All' : SLOTS[f].emoji + ' ' + SLOTS[f].label + 's'"></button>
                 </template>
               </div>
             </div>
+            <p x-show="!sortedInventory().length" class="text-center text-slate-500 py-6">No items here yet. Win fights to find loot!</p>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <template x-for="it in sortedInventory()" :key="it.id">
                 <div class="loot-card" :class="RARITIES[it.rarity].cls">
                   <p class="text-3xl" x-text="it.emoji"></p>
                   <p class="font-display font-bold leading-tight mt-1" x-text="it.name"></p>
-                  <p class="text-[11px] font-extrabold uppercase" x-text="RARITIES[it.rarity].name"></p>
-                  <p class="text-sm font-extrabold" x-text="'+' + it.power + ' ' + SLOTS[it.slot].stat"></p>
+                  <p class="text-[11px] font-extrabold uppercase" x-text="RARITIES[it.rarity].name + ' ' + (it.type || SLOTS[it.slot].label)"></p>
+                  <p class="text-sm font-extrabold" x-text="itemStats(it)"></p>
                   <p x-show="isEquipped(it)" class="text-xs font-extrabold text-green-700 mt-1">✓ Equipped</p>
-                  <button x-show="!isEquipped(it)" class="btn btn-xs mt-1" @click="equip(it)"
-                          x-text="'Equip' + (gearDiff(it) > 0 ? ' ▲' + gearDiff(it) : '')"></button>
+                  <template x-if="!isEquipped(it)">
+                    <div>
+                      <p class="text-[11px] font-bold mt-1" :class="isUpgrade(it) ? 'text-green-700' : 'text-slate-500'" x-text="compareText(it)"></p>
+                      <button class="btn btn-xs mt-1" :class="isUpgrade(it) && 'btn-success'" @click="equip(it)">Equip</button>
+                    </div>
+                  </template>
                 </div>
               </template>
             </div>
+            <p class="text-xs text-slate-500 mt-3" x-text="'The bag holds ' + INVENTORY_LIMIT + ' items. When it’s full, the oldest unequipped items are dropped.'"></p>
           </section>
         </div>
       </template>
@@ -518,11 +570,11 @@
             </div>
           </section>
 
-          <!-- Monster Battle -->
+          <!-- BattleQuest -->
           <a href="#/student/battle" class="flex items-center gap-4 p-4 rounded-3xl battle-bg text-white shadow-md" @click="Sound.click()">
             <span class="bg-white/15 rounded-2xl p-3 text-3xl leading-none" x-text="BattleRules.monster(hero.stage).emoji"></span>
             <div>
-              <p class="font-display text-lg font-bold">Monster Battle ⚔️</p>
+              <p class="font-display text-lg font-bold">BattleQuest ⚔️</p>
               <p class="text-sm text-white/80" x-text="'Stage ' + hero.stage + ': answer questions to defeat the ' + BattleRules.monster(hero.stage).name + ' and win loot!'"></p>
             </div>
             <i data-lucide="chevron-right" class="w-6 h-6 ml-auto shrink-0"></i>
@@ -586,7 +638,7 @@
                   <span x-html="icon(questStatus(s, i)==='locked' ? 'lock' : (questStatus(s, i)==='completed' ? 'check' : 'play'), 'w-8 h-8')"></span>
                 </button>
                 <div class="quest-label">
-                  <p class="text-[11px] font-extrabold text-slate-500" x-text="q.code + ' (sample)'"></p>
+                  <p class="text-[11px] font-extrabold text-slate-500" x-text="q.short"></p>
                   <p class="font-display font-bold leading-tight" :class="questStatus(s, i)==='locked' && 'text-slate-400'" x-text="(i + 1) + '. ' + q.title"></p>
                   <p class="text-lg leading-none mt-0.5" :aria-label="questStars(q.id) + ' of 3 stars'">
                     <template x-for="n in 3" :key="n"><span :class="n <= questStars(q.id) ? '' : 'opacity-20 grayscale'">⭐</span></template>
@@ -612,7 +664,7 @@
             <span class="badge border-0 font-bold text-white" :style="`background:${subject(q.subjectId).color}`" x-text="subject(q.subjectId).name"></span>
             <h1 class="font-display text-3xl font-bold mt-2" x-text="q.title"></h1>
             <div class="mt-3 rounded-2xl bg-slate-50 p-3 text-sm">
-              <p class="font-extrabold text-slate-700">🎯 Competency <span class="font-mono text-xs bg-white border rounded px-1.5 py-0.5" x-text="q.code"></span> <span class="text-xs text-slate-500">(sample code)</span></p>
+              <p class="font-extrabold text-slate-700">🎯 What you’ll learn</p>
               <p class="mt-1 text-slate-700" x-text="q.competency"></p>
             </div>
           </div>
@@ -764,11 +816,10 @@
                   <span class="label-text font-bold mb-1">Game PIN</span>
                   <input x-model="player.pin" inputmode="numeric" maxlength="6" placeholder="123456" class="input input-bordered input-lg text-center font-display text-3xl tracking-[0.3em]" autocomplete="off">
                 </label>
-                <label class="form-control">
-                  <span class="label-text font-bold mb-1">Nickname</span>
-                  <input x-model="player.nickname" maxlength="12" class="input input-bordered input-lg" autocomplete="off">
-                  <span class="text-xs text-slate-500 mt-1">🛡️ Use a nickname — never your full real name.</span>
-                </label>
+                <div class="flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
+                  <img :src="avatarUrl(student.avatar)" class="w-10 h-10 rounded-full bg-white" alt="">
+                  <p class="text-sm"><span class="text-slate-500">Playing as</span><br><b class="text-base" x-text="student.nickname"></b></p>
+                </div>
                 <div x-show="player.error" class="alert alert-warning text-sm" x-text="player.error"></div>
                 <button class="btn btn-primary btn-lg btn-block btn-3d" :disabled="player.phase==='connecting'">
                   <span x-show="player.phase==='connecting'" class="loading loading-spinner"></span>
@@ -845,7 +896,7 @@
           <i data-lucide="award" class="w-6 h-6"></i>Badges
         </a>
         <a href="#/student/battle" class="flex flex-col items-center justify-center gap-0.5 text-xs font-bold" :class="screen==='student-battle' ? 'text-brand' : 'text-slate-500'">
-          <i data-lucide="swords" class="w-6 h-6"></i>Battle
+          <i data-lucide="swords" class="w-6 h-6"></i>BattleQuest
         </a>
         <a href="#/student/join" class="flex flex-col items-center justify-center gap-0.5 text-xs font-bold" :class="screen==='student-join' ? 'text-brand' : 'text-slate-500'">
           <i data-lucide="radio" class="w-6 h-6"></i>Live
@@ -924,7 +975,7 @@
 
             <div x-show="weak" class="rounded-2xl p-4 bg-rose-50 border border-rose-200 flex flex-col sm:flex-row sm:items-center gap-3">
               <span class="text-rose-700"><i data-lucide="alert-triangle" class="w-6 h-6"></i></span>
-              <p class="flex-1 text-sm"><b>Needs attention:</b> <span x-text="weak.title + ' (' + weak.code + ')'"></span> has the lowest class average at <b x-text="weak.avg + '%'"></b>.</p>
+              <p class="flex-1 text-sm"><b>Needs attention:</b> <span x-text="weak.title"></span> has the lowest class average at <b x-text="weak.avg + '%'"></b>.</p>
               <div class="flex gap-2">
                 <a href="#/teacher/heatmap" class="btn btn-sm btn-outline">View heatmap</a>
                 <button class="btn btn-sm btn-primary" @click="openAssign(weak.id)">Assign practice</button>
@@ -981,7 +1032,7 @@
                         </td>
                         <td class="min-w-[180px]">
                           <template x-if="r.weakest">
-                            <span class="text-sm"><span class="font-mono text-xs bg-slate-100 rounded px-1" x-text="r.weakest.code"></span> <span x-text="r.weakest.short + ' (' + r.weakest.score + '%)'"></span></span>
+                            <span class="text-sm" x-text="r.weakest.short + ' (' + r.weakest.score + '%)'"></span>
                           </template>
                           <template x-if="!r.weakest"><span class="text-sm text-slate-400">No data yet</span></template>
                         </td>
@@ -1013,11 +1064,9 @@
                     <th class="sticky-col text-left text-sm px-2 min-w-[140px]">Student</th>
                     <template x-for="c in comps" :key="c.id">
                       <th class="align-bottom pb-1">
-                        <div class="w-[52px] text-[10px] leading-tight font-extrabold text-slate-700" :title="c.code + ': ' + c.competency">
+                        <div class="w-[52px] text-[10px] leading-tight font-extrabold text-slate-700" :title="c.title + ': ' + c.competency">
                           <div class="h-1.5 rounded-full mb-1" :style="`background:${c.subject.color}`"></div>
-                          <span x-text="c.short"></span>
-                          <div class="font-mono font-normal text-slate-500" x-text="c.code.split('-')[0]"></div>
-                        </div>
+                          <span x-text="c.short"></span>                        </div>
                       </th>
                     </template>
                   </tr>
@@ -1048,7 +1097,7 @@
 
             <div x-show="weak" class="rounded-2xl p-4 bg-white border border-slate-200 flex flex-col sm:flex-row sm:items-center gap-3">
               <span class="text-brand"><i data-lucide="lightbulb" class="w-6 h-6"></i></span>
-              <p class="flex-1 text-sm"><b>Suggestion:</b> the class is weakest in <b x-text="weak.title"></b> (<span x-text="weak.code"></span>, <span x-text="weak.avg + '%'"></span>). Assign it as practice, or review it together in a live game.</p>
+              <p class="flex-1 text-sm"><b>Suggestion:</b> the class is weakest in <b x-text="weak.title"></b> (<span x-text="weak.avg + '%'"></span> class average). Assign it as practice, or review it together in a live game.</p>
               <div class="flex gap-2">
                 <button class="btn btn-sm btn-primary" @click="openAssign(weak.id)">Assign</button>
                 <button class="btn btn-sm btn-outline" @click="live.sourceId = weak.id; go('#/teacher/live')">Host live</button>
@@ -1087,7 +1136,7 @@
               </div>
               <label class="input input-bordered input-sm flex items-center gap-2 sm:ml-auto bg-white">
                 <i data-lucide="search" class="w-4 h-4 opacity-60"></i>
-                <input x-model="librarySearch" placeholder="Search title or code" class="grow">
+                <input x-model="librarySearch" placeholder="Search quests" class="grow">
               </label>
             </div>
 
@@ -1098,7 +1147,7 @@
                   <div class="p-4 flex-1 flex flex-col">
                     <div class="flex items-center gap-2 text-xs font-bold">
                       <span class="badge border-0 text-white" :style="`background:${item.subject.color}`" x-text="item.subject.name"></span>
-                      <span class="font-mono text-slate-500" x-text="item.code + (item.custom ? '' : ' (sample)')"></span>
+                      <span x-show="item.custom" class="text-slate-500">Teacher-made</span>
                     </div>
                     <h3 class="font-display text-lg font-bold mt-2" x-text="item.title"></h3>
                     <p class="text-sm text-slate-600 mt-1 flex-1" x-text="item.competency"></p>
@@ -1562,7 +1611,7 @@
   <template x-if="previewQuiz">
     <div class="modal-box rounded-3xl max-w-2xl">
       <h2 class="font-display text-2xl font-bold" x-text="previewQuiz.title"></h2>
-      <p class="text-sm text-slate-600" x-text="(previewQuiz.code || 'Teacher-made') + ' · ' + previewQuiz.questions.length + ' questions'"></p>
+      <p class="text-sm text-slate-600" x-text="(previewQuiz.custom ? 'Teacher-made · ' : '') + previewQuiz.questions.length + ' questions'"></p>
       <ol class="mt-4 space-y-3">
         <template x-for="(q, i) in previewQuiz.questions" :key="i">
           <li class="rounded-xl bg-slate-50 p-3">

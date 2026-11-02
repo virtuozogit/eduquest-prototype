@@ -5,7 +5,7 @@
 
 EduQuest is a gamified, mobile-first learning platform for Filipino elementary students. This prototype mixes **Canvas LMS** structure (subjects, modules, assignments, teacher dashboards) with **Kahoot** energy (timed questions, colored answer shapes, speed points, streaks, leaderboards, podium). It adds the feature that sets EduQuest apart: **instant feedback with an explanation after every answer.**
 
-Sample content: **Grade 4 · Mathematics, Science, English** (10 quests, 90 questions). Competency codes are written in a MATATAG-like style and labeled **sample**. They are not official DepEd codes.
+Sample content: **Grade 4 · Mathematics, Science, English** (10 quests, 90 questions). Each quest lists the competency it teaches, written in a MATATAG-like style (sample content).
 
 ---
 
@@ -45,7 +45,7 @@ All paths are relative, so the site works inside the `/eduquest-prototype/` subf
 
 | Role | Screens |
 |---|---|
-| **Student** (mobile-first) | Home (avatar, level, XP, streak, badges, subject cards, teacher assignments) · Quest map · Lesson · Kahoot-style challenge with instant feedback · Results (stars, XP, badges, review mistakes, class leaderboard) · Badges · Join live game · **Monster Battle** (quiz-powered RPG with loot) |
+| **Student** (mobile-first) | Home (avatar, level, XP, streak, badges, subject cards, teacher assignments) · Quest map · Lesson · Kahoot-style challenge with instant feedback · Results (stars, XP, badges, review mistakes, class leaderboard) · Badges · Join live game · **BattleQuest** (quiz-powered RPG with a loot bag) |
 | **Teacher** (Canvas-like) | Class dashboard (Lean Canvas key metrics, charts, sortable roster) · Mastery heatmap · Challenge library + assign with due date · Quiz builder · Host Live Game (PIN, lobby, bots, answer chart, top 5, podium) |
 | **Parent** | Weekly time chart · progress stats · subjects improving vs. needing help · recent badges · **daily screen-time limit** · download/delete child data (RA 10173) · plan info (parents only) |
 
@@ -59,15 +59,16 @@ All paths are relative, so the site works inside the `/eduquest-prototype/` subf
   - Accuracy **< 50%** → the app suggests re-reading the lesson and serves easier questions (🌱 Warm-up).
   - Otherwise, the difficulty stays the same (⭐ Balanced).
 
-### Monster Battle (see `js/battle.js`)
+### BattleQuest (see `js/battle.js`)
 
-An idle "auto-clicker" RPG that runs on the same questions as the quests. Open it from the student home card or the **Battle** tab.
+A quiz-powered RPG that uses the same questions as the quests. Open it from the student home card or the **BattleQuest** tab.
 
-- **Correct answer → your hero attacks.** Answers in a row build a **combo** (×1.0, ×1.25, … up to ×2.5 damage). 10% of hits are critical (×1.5).
-- **Auto-attack:** while your combo is alive, your hero also attacks every second on their own. A wrong answer ends the combo and the auto-attack.
+- **Correct answer → your hero attacks.** Answers in a row build a **combo** (×1.0, ×1.25, … up to ×2.5 damage). A wrong answer ends the combo.
+- **Critical hits:** every attack has a chance to deal **double damage**. The chance (CRIT %) comes from your equipped weapon.
 - **Wrong answer → the monster hits you**, and you see the right answer and the explanation. The monster also attacks when its 15-second meter fills.
 - **Stages:** monsters from Philippine folklore (Duwende, Tikbalang, Kapre, Bakunawa…). Every 5th stage is a **boss**. Stages 1–2 use easy questions, 3–5 easy + medium, 6+ all levels. Choose all subjects or one.
-- **Loot:** every win drops a **sword (ATK), shield (DEF) or armor (HP)** in Common, Rare, Epic, or Legendary. Bosses always drop Rare or better. Loot gets stronger on higher stages. Equip it at camp or right after the fight.
+- **Loot:** every win drops a **weapon (ATK + CRIT %), shield (DEF) or armor (HP)** in Common, Rare, Epic, or Legendary. Weapons come in five types: sword, bow, spear, hammer, and staff. Weapon CRIT % by rarity: Common 3–6%, Rare 6–10%, Epic 10–15%, Legendary 15–22%. Bosses always drop Rare or better, and loot gets stronger on higher stages.
+- **Loot bag:** open it from camp (🎒 button) or after a fight. It shows your equipped gear and every item, compares each one with what you're wearing (▲/▼ ATK and CRIT), and lets you equip it.
 - **XP:** each win adds 5 + 2 × stage XP (+15 for a boss) to the student's normal level. Losing a fight keeps all gear.
 
 ### Child safety (from our business plan)
@@ -87,7 +88,7 @@ js/sound.js       generated beep sound effects (Web Audio API) + confetti helper
 js/quiz.js        challenge engine: scoring, adaptive rules, badges
 js/dashboard.js   teacher + parent data and Chart.js charts
 js/live.js        Host Live Game, bots, BroadcastChannel two-tab play
-js/battle.js      Monster Battle: monsters, loot tables, combo/auto-attack fight loop
+js/battle.js      BattleQuest: monsters, weapons + loot tables, combo/critical-hit fight loop
 js/app.js         Alpine app: routing (#/student, #/teacher/…), screen time, assignments, quiz builder
 ```
 
