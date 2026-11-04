@@ -332,7 +332,7 @@
               </div>
               <button x-show="!isEquipped(fight.loot)" class="btn btn-secondary btn-sm mt-3" @click="equip(fight.loot)">Equip it</button>
               <p x-show="isEquipped(fight.loot)" class="text-green-700 font-extrabold text-sm mt-3">✓ Equipped</p>
-              <button class="btn btn-outline btn-sm mt-3 gap-1" @click="openLootBag()">🎒 Open loot bag</button>
+              <button class="btn btn-outline btn-sm mt-3 gap-1" @click="openLootBag()">🎒 Inventory</button>
               <div class="grid grid-cols-2 gap-3 mt-5">
                 <button class="btn btn-ghost" @click="leaveFight()">Back to camp</button>
                 <button class="btn btn-primary btn-3d" @click="nextFight()" x-text="'Stage ' + hero.stage + ' →'"></button>
@@ -345,8 +345,8 @@
             <div class="mt-6 bg-white text-slate-900 rounded-3xl p-6 shadow-xl text-center anim-bounce-in">
               <p class="text-5xl">🌱</p>
               <p class="font-display text-2xl font-bold mt-2" x-text="'The ' + fight.monster.name + ' was tough this time!'"></p>
-              <p class="text-slate-600 mt-1">Your gear is safe. Every question you tried made you stronger. Try again, equip better gear from your loot bag, or pick an earlier stage to find better loot.</p>
-              <button class="btn btn-outline btn-sm mt-3 gap-1" @click="openLootBag()">🎒 Open loot bag</button>
+              <p class="text-slate-600 mt-1">Your gear is safe. Every question you tried made you stronger. Try again, equip better gear from your inventory, or pick an earlier stage to find better loot.</p>
+              <button class="btn btn-outline btn-sm mt-3 gap-1" @click="openLootBag()">🎒 Inventory</button>
               <div class="grid grid-cols-2 gap-3 mt-5">
                 <button class="btn btn-ghost" @click="leaveFight()">Back to camp</button>
                 <button class="btn btn-primary btn-3d" @click="nextFight()">Try again</button>
@@ -380,13 +380,15 @@
             <div class="grid grid-cols-3 gap-2 mt-2">
               <template x-for="slot in ['weapon','shield','armor']" :key="slot">
                 <div class="bg-white/10 rounded-2xl p-2 text-center">
+                  <p class="text-[11px] font-extrabold uppercase tracking-wide text-white/80" x-text="SLOTS[slot].label"></p>
                   <p class="text-2xl" x-text="equippedItem(slot)?.emoji || '▫️'"></p>
                   <p class="text-[11px] font-extrabold leading-tight" x-text="equippedItem(slot)?.name || 'No ' + SLOTS[slot].label.toLowerCase()"></p>
+                  <p class="text-[10px] font-bold text-white/70 mt-0.5" x-text="'Boosts ' + SLOTS[slot].stat + (slot === 'weapon' ? ' + CRIT' : '')"></p>
                 </div>
               </template>
             </div>
             <a href="#/student/battle/bag" class="btn btn-block mt-3 bg-white/15 border-0 text-white hover:bg-white/25 gap-2" @click="Sound.click()">
-              🎒 Open loot bag <span class="badge border-0 bg-sun text-brand-dark font-extrabold" x-text="hero.inventory.length"></span>
+              🎒 Inventory
             </a>
           </section>
 
@@ -427,14 +429,14 @@
         </div>
       </template>
 
-      <!-- ===== BATTLEQUEST: LOOT BAG (#/student/battle/bag) ===== -->
+      <!-- ===== BATTLEQUEST: INVENTORY (#/student/battle/bag) ===== -->
       <template x-if="screen==='student-battle' && param==='bag'">
         <div class="space-y-5 anim-slide-up">
           <a href="#/student/battle" class="btn btn-ghost btn-sm gap-1 -ml-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to camp</a>
 
           <section class="rounded-3xl p-5 text-white battle-bg shadow-lg">
             <p class="text-white/80 text-sm font-bold">BattleQuest</p>
-            <h1 class="font-display text-3xl font-bold">🎒 Loot bag</h1>
+            <h1 class="font-display text-3xl font-bold">🎒 Inventory</h1>
             <p class="text-sm font-extrabold" x-text="hero.inventory.length + (hero.inventory.length === 1 ? ' item' : ' items') + ' · tap Equip to swap gear'"></p>
             <div class="grid grid-cols-4 gap-2 mt-4 text-center">
               <div class="bg-white/15 rounded-2xl py-2"><p class="text-xl">⚔️</p><p class="font-extrabold text-sm" x-text="heroAtk() + ' ATK'"></p></div>
@@ -963,8 +965,9 @@
                   <p class="font-display text-3xl font-bold mt-1" x-text="st.classAvg + '%'"></p>
                 </div>
                 <div class="bg-white rounded-2xl p-4 border border-slate-200">
-                  <p class="text-sm text-slate-600 font-bold">Challenges per student</p>
+                  <p class="text-sm text-slate-600 font-bold">Avg. challenges completed</p>
                   <p class="font-display text-3xl font-bold mt-1" x-text="st.challengesPerStudent"></p>
+                  <p class="text-xs text-slate-500 mt-1">per student, including retries</p>
                 </div>
                 <div class="bg-white rounded-2xl p-4 border border-slate-200">
                   <p class="text-sm text-slate-600 font-bold">Score gain on repeated topics</p>
@@ -990,8 +993,16 @@
               </div>
               <div class="bg-white rounded-2xl p-4 border border-slate-200">
                 <h2 class="font-bold">Mastery levels</h2>
-                <p class="text-xs text-slate-500">All student × competency results</p>
-                <div class="h-64 mt-3"><canvas id="chart-mastery" role="img" aria-label="Doughnut chart of mastery levels"></canvas></div>
+                <p class="text-xs text-slate-500" x-text="'Student × competency results · ' + (masterySubject === 'all' ? 'all subjects' : subject(masterySubject).name)"></p>
+                <!-- Subject filter (redraws the chart) -->
+                <div class="flex flex-wrap gap-1 mt-2">
+                  <template x-for="f in [{id:'all', label:'All'}, ...data.subjects.map(s => ({id:s.id, label:s.emoji + ' ' + s.name}))]" :key="f.id">
+                    <button class="btn btn-xs rounded-full" :class="masterySubject===f.id ? 'btn-primary' : 'btn-ghost bg-slate-100'" @click="setMasterySubject(f.id)" x-text="f.label"></button>
+                  </template>
+                </div>
+                <div class="h-56 mt-3"><canvas id="chart-mastery" role="img" aria-label="Doughnut chart of mastery levels"></canvas></div>
+                <p class="text-xs text-slate-600 font-bold text-center mt-2"
+                   x-text="'Mastered ' + masteryCounts().high + ' · Developing ' + masteryCounts().mid + ' · Needs help ' + masteryCounts().low"></p>
               </div>
             </div>
 
@@ -1009,7 +1020,7 @@
                       <th><button class="font-bold" @click="sortRoster('completedPct')">Quests done ↕</button></th>
                       <th><button class="font-bold" @click="sortRoster('avgScore')">Avg score ↕</button></th>
                       <th>Weakest competency</th>
-                      <th><button class="font-bold" @click="sortRoster('challenges')">Challenges ↕</button></th>
+                      <th><button class="font-bold" @click="sortRoster('challenges')" title="Quest challenges finished, including retries">Challenges completed ↕</button></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1048,8 +1059,48 @@
 
         <!-- ===== MASTERY HEATMAP ===== -->
         <template x-if="screen==='teacher-heatmap'">
-          <div class="space-y-4" x-data="{ roster: classRoster(), comps: competencyAverages(), weak: weakestCompetency() }">
+          <!-- Filters: subj = subject columns, band = mastery level, search = student name.
+               A student row shows if ANY visible cell is in the chosen band. -->
+          <div class="space-y-4" x-data="{
+                 roster: classRoster(), allComps: competencyAverages(), weak: weakestCompetency(),
+                 subj: 'all', band: 'all', search: '',
+                 get comps() { return this.allComps.filter(c => this.subj === 'all' || c.subjectId === this.subj); },
+                 get rows() {
+                   const q = this.search.trim().toLowerCase();
+                   return this.roster.filter(st =>
+                     (!q || st.nickname.toLowerCase().includes(q)) &&
+                     (this.band === 'all' || this.comps.some(c => masteryBand(st.mastery[c.id]) === this.band)));
+                 },
+                 dim(v) { return this.band !== 'all' && masteryBand(v) !== this.band; },
+                 clear() { this.subj = 'all'; this.band = 'all'; this.search = ''; }
+               }">
             <p class="text-slate-600">Each cell is a student’s best score on one competency. Use it to spot who needs help — and on what.</p>
+
+            <!-- Filters -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-3 space-y-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-extrabold text-slate-500 uppercase w-16">Subject</span>
+                <template x-for="f in [{id:'all', label:'All'}, ...data.subjects.map(s => ({id:s.id, label:s.emoji + ' ' + s.name}))]" :key="f.id">
+                  <button class="btn btn-xs sm:btn-sm rounded-full" :class="subj===f.id ? 'btn-primary' : 'btn-ghost bg-slate-100'" @click="subj=f.id" x-text="f.label"></button>
+                </template>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-extrabold text-slate-500 uppercase w-16">Level</span>
+                <template x-for="f in [{id:'all', label:'All'}, {id:'low', label:'Needs help'}, {id:'mid', label:'Developing'}, {id:'high', label:'Mastered'}, {id:'none', label:'Not started'}]" :key="f.id">
+                  <button class="btn btn-xs sm:btn-sm rounded-full gap-1.5" :class="band===f.id ? 'btn-primary' : 'btn-ghost bg-slate-100'" @click="band=f.id">
+                    <span x-show="f.id!=='all'" class="w-2.5 h-2.5 rounded-full" :class="['heat-' + f.id, f.id==='none' && 'border border-slate-400']"></span><span x-text="f.label"></span>
+                  </button>
+                </template>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <label class="input input-bordered input-sm flex items-center gap-2 w-full sm:w-64">
+                  <i data-lucide="search" class="w-4 h-4 opacity-60"></i>
+                  <input x-model="search" placeholder="Search student" class="grow">
+                </label>
+                <p class="text-sm text-slate-600 font-bold" x-text="'Showing ' + rows.length + ' of ' + roster.length + ' students'"></p>
+                <button x-show="subj!=='all' || band!=='all' || search" class="btn btn-ghost btn-xs" @click="clear()">Clear filters</button>
+              </div>
+            </div>
             <div class="flex flex-wrap gap-2 text-sm font-bold">
               <span class="flex items-center gap-1.5"><span class="heat-cell heat-high !w-6 !h-6 text-[10px]">80</span> Mastered (80%+)</span>
               <span class="flex items-center gap-1.5"><span class="heat-cell heat-mid !w-6 !h-6 text-[10px]">65</span> Developing (50–79%)</span>
@@ -1072,16 +1123,17 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <template x-for="st in roster" :key="st.id">
+                  <tr x-show="!rows.length"><td :colspan="comps.length + 1" class="text-center text-slate-500 text-sm py-6">No students match these filters.</td></tr>
+                  <template x-for="st in rows" :key="st.id">
                     <tr>
                       <td class="sticky-col pr-2">
                         <div class="flex items-center gap-2">
                           <img :src="avatarUrl(st.avatar)" class="w-7 h-7 rounded-full bg-slate-100" alt="">
-                          <span class="text-sm font-bold whitespace-nowrap" :class="st.isMe && 'text-brand'" x-text="st.nickname"></span>
+                          <span class="text-sm font-bold whitespace-nowrap truncate max-w-[100px] sm:max-w-none" :class="st.isMe && 'text-brand'" :title="st.nickname" x-text="st.nickname"></span>
                         </div>
                       </td>
                       <template x-for="c in comps" :key="c.id">
-                        <td><div class="heat-cell" :class="'heat-' + masteryBand(st.mastery[c.id])" :title="st.nickname + ' · ' + c.title + ': ' + masteryLabel(st.mastery[c.id])" x-text="st.mastery[c.id] ?? '–'"></div></td>
+                        <td><div class="heat-cell transition-opacity" :class="['heat-' + masteryBand(st.mastery[c.id]), dim(st.mastery[c.id]) && 'opacity-20']" :title="st.nickname + ' · ' + c.title + ': ' + masteryLabel(st.mastery[c.id])" x-text="st.mastery[c.id] ?? '–'"></div></td>
                       </template>
                     </tr>
                   </template>

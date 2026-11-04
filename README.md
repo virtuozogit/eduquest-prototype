@@ -45,7 +45,7 @@ All paths are relative, so the site works inside the `/eduquest-prototype/` subf
 
 | Role | Screens |
 |---|---|
-| **Student** (mobile-first) | Home (avatar, level, XP, streak, badges, subject cards, teacher assignments) · Quest map · Lesson · Kahoot-style challenge with instant feedback · Results (stars, XP, badges, review mistakes, class leaderboard) · Badges · Join live game · **BattleQuest** (quiz-powered RPG with a loot bag) |
+| **Student** (mobile-first) | Home (avatar, level, XP, streak, badges, subject cards, teacher assignments) · Quest map · Lesson · Kahoot-style challenge with instant feedback · Results (stars, XP, badges, review mistakes, class leaderboard) · Badges · Join live game · **BattleQuest** (quiz-powered RPG with an inventory) |
 | **Teacher** (Canvas-like) | Class dashboard (Lean Canvas key metrics, charts, sortable roster) · Mastery heatmap · Challenge library + assign with due date · Quiz builder · Host Live Game (PIN, lobby, bots, answer chart, top 5, podium) |
 | **Parent** | Weekly time chart · progress stats · subjects improving vs. needing help · recent badges · **daily screen-time limit** · download/delete child data (RA 10173) · plan info (parents only) |
 
@@ -68,7 +68,7 @@ A quiz-powered RPG that uses the same questions as the quests. Open it from the 
 - **Wrong answer → the monster hits you**, and you see the right answer and the explanation. The monster also attacks when its 15-second meter fills.
 - **Stages:** monsters from Philippine folklore (Duwende, Tikbalang, Kapre, Bakunawa…). Every 5th stage is a **boss**. Stages 1–2 use easy questions, 3–5 easy + medium, 6+ all levels. Choose all subjects or one.
 - **Loot:** every win drops a **weapon (ATK + CRIT %), shield (DEF) or armor (HP)** in Common, Rare, Epic, or Legendary. Weapons come in five types: sword, bow, spear, hammer, and staff. Weapon CRIT % by rarity: Common 3–6%, Rare 6–10%, Epic 10–15%, Legendary 15–22%. Bosses always drop Rare or better, and loot gets stronger on higher stages.
-- **Loot bag:** open it from camp (🎒 button) or after a fight. It shows your equipped gear and every item, compares each one with what you're wearing (▲/▼ ATK and CRIT), and lets you equip it.
+- **Inventory:** open it from camp (🎒 Inventory button) or after a fight. It shows your equipped gear and every item, compares each one with what you're wearing (▲/▼ ATK and CRIT), and lets you equip it.
 - **XP:** each win adds 5 + 2 × stage XP (+15 for a boss) to the student's normal level. Losing a fight keeps all gear.
 
 ### Child safety (from our business plan)

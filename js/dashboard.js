@@ -49,6 +49,7 @@ function dashboardMixin() {
   return {
     rosterSort: 'nickname',
     rosterDir: 1,
+    masterySubject: 'all',   // subject filter for the "Mastery levels" chart
 
     allQuests() { return EQ_DATA.subjects.flatMap(s => s.quests.map(q => ({ ...q, subjectId: s.id, subject: s }))); },
 
@@ -158,12 +159,28 @@ function dashboardMixin() {
         })
       });
 
-      // How many student × competency cells fall into each mastery band
+      this.drawMasteryChart();
+    },
+
+    // How many student × competency results fall into each mastery band,
+    // for all subjects or just one (masterySubject)
+    masteryCounts() {
       const counts = { high: 0, mid: 0, low: 0 };
-      this.classRoster().forEach(st => this.allQuests().forEach(q => {
+      const quests = this.allQuests().filter(q => this.masterySubject === 'all' || q.subjectId === this.masterySubject);
+      this.classRoster().forEach(st => quests.forEach(q => {
         const b = MASTERY.band(st.mastery[q.id]);
         if (b !== 'none') counts[b]++;
       }));
+      return counts;
+    },
+
+    setMasterySubject(id) {
+      this.masterySubject = id;
+      this.drawMasteryChart();
+    },
+
+    drawMasteryChart() {
+      const counts = this.masteryCounts();
       drawChart('chart-mastery', {
         type: 'doughnut',
         data: {

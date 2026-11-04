@@ -10,7 +10,7 @@
      - The monster fills an attack meter and hits you when it's full,
        and also hits you when you answer wrong (which ends the combo).
      - Beat the monster → LOOT (weapon, shield, armor) + XP + next stage.
-     - All loot goes into the LOOT BAG (#/student/battle/bag), where you
+     - All loot goes into the INVENTORY (#/student/battle/bag), where you
        can compare and equip gear.
    Gear stats:  weapon → ATK + CRIT %   shield → DEF   armor → max HP
    Contains:
@@ -189,7 +189,7 @@ function battleMixin() {
       return d >= 0 && c >= 0 && (d > 0 || c > 0);
     },
 
-    // Open the loot bag (also from the victory/defeat screen)
+    // Open the inventory (also from the victory/defeat screen)
     openLootBag() {
       Sound.click();
       this.leaveFight();
