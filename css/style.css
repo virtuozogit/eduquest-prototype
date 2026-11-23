@@ -158,6 +158,42 @@ body { background: #F6F4FD; -webkit-tap-highlight-color: transparent; }
 .hp-bar { height: .7rem; border-radius: 999px; background: rgba(255,255,255,.2); overflow: hidden; }
 .hp-bar > div { height: 100%; border-radius: 999px; transition: width .25s ease; }
 
+/* Special event raid (e.g. Emperor Doom) — green theme.
+   Dark greens keep white text readable; lime is the glowing accent. */
+.event-card {
+  position: relative; overflow: hidden;
+  background: radial-gradient(circle at 90% 10%, rgba(163,230,53,.45) 0, transparent 35%),
+              linear-gradient(135deg, #022C22 0%, #065F46 55%, #047857 100%);
+  border: 3px solid #A3E635;
+  box-shadow: 0 10px 30px rgba(5,150,105,.35);
+  transition: transform .15s ease;
+}
+.event-card:hover { transform: translateY(-2px); }
+.event-card.is-selected { box-shadow: 0 0 0 4px #fff, 0 0 0 8px #A3E635, 0 10px 30px rgba(5,150,105,.45); }
+/* The event raid fight uses a green background instead of .battle-bg */
+.event-bg {
+  background: radial-gradient(circle at 85% 0%, #65A30D 0, transparent 40%),
+              radial-gradient(circle at 0% 100%, #059669 0, transparent 55%),
+              #022C22;
+}
+.event-bg .monster-sprite.is-boss { box-shadow: 0 0 0 4px #A3E635, 0 0 30px rgba(163,230,53,.6); }
+/* a soft shine that sweeps across the banner */
+.event-card::after {
+  content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.25), transparent);
+  animation: shine 3.5s ease-in-out infinite;
+}
+.event-sprite {
+  display: grid; place-items: center; width: 5.5rem; height: 5.5rem; font-size: 3.6rem; line-height: 1;
+  border-radius: 999px; background: rgba(255,255,255,.18); box-shadow: 0 0 0 3px #A3E635, 0 0 24px rgba(163,230,53,.7);
+  animation: float 2.4s ease-in-out infinite;
+}
+/* Custom boss art (SVG) fills most of its round frame */
+.boss-art { width: 88%; height: 88%; display: block; }
+.event-pulse { animation: event-pulse 1.6s ease-in-out infinite; }
+@keyframes shine { 0%, 60% { left: -60%; } 100% { left: 130%; } }
+@keyframes event-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(163,230,53,.8); } 50% { box-shadow: 0 0 0 6px rgba(163,230,53,0); } }
+
 /* Damage numbers that float up and fade */
 .dmg-float {
   position: absolute; left: 50%; top: 10%; z-index: 5; transform: translateX(-50%);

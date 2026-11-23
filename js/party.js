@@ -36,20 +36,68 @@ const DUEL_TROPHIES = { win: 20, draw: 10, loss: 5 };   // never lose trophies f
 const DUEL_XP = { win: 20, draw: 12, loss: 8 };
 
 /* 2. RAID BOSSES -----------------------------------------------------
-   hp/atk are multiplied by the player's progress (see PartyRules.scale). */
+   hp/atk grow with the player's progress (see PartyRules.scale/atkScale).
+   recommended = the BattleQuest stage you should reach first (shown as a tip).
+   event: true = a SPECIAL EVENT boss: shown in its own highlighted banner,
+   open to every player, and always drops Legendary loot. */
 const RAID_BOSSES = [
-  { id: 'kapre', name: 'Giant Kapre', emoji: '👹', tier: 'Normal', hp: 700, atk: 28, xp: 40,
+  { id: 'kapre', name: 'Giant Kapre', emoji: '👹', tier: 'Normal', recommended: 1, hp: 700, atk: 28, xp: 40,
     levels: ['easy', 'medium'], line: 'The giant of the balete tree wants a rematch!' },
-  { id: 'bakunawa', name: 'Bakunawa, Moon Eater', emoji: '🐉', tier: 'Hard', hp: 1100, atk: 38, xp: 60,
+  { id: 'bakunawa', name: 'Bakunawa, Moon Eater', emoji: '🐉', tier: 'Hard', recommended: 4, hp: 1100, atk: 38, xp: 60,
     levels: ['easy', 'medium', 'hard'], line: 'Protect the moon! Every right answer helps.' },
-  { id: 'minokawa', name: 'Minokawa, Sky Giant', emoji: '🦅', tier: 'Legendary', hp: 1600, atk: 50, xp: 90,
-    levels: ['medium', 'hard'], line: 'A bird as big as an island. Only a strong team can win!' }
+  { id: 'minokawa', name: 'Minokawa, Sky Giant', emoji: '🦅', tier: 'Legendary', recommended: 7, hp: 1300, atk: 34, xp: 90,
+    levels: ['medium', 'hard'], line: 'A bird as big as an island. Only a strong team can win!' },
+  { id: 'emperor-doom', name: 'Emperor Doom', emoji: '🦹', art: 'emperor-doom', tier: 'Special Event', event: true, recommended: 1, hp: 900, atk: 25, xp: 120,
+    levels: ['easy', 'medium'], line: 'The iron-masked emperor wants to rule every classroom. Stop him together!' }
 ];
+
+/* Emperor Doom's picture (original art): a green hood around a riveted
+   metal mask with glowing eyes. Bosses with `art` use this instead of
+   their emoji (see bossSprite() below). */
+const EMPEROR_DOOM_SVG = `
+<svg viewBox="0 0 100 100" class="boss-art" role="img" aria-label="Emperor Doom: a green hood and a metal mask">
+  <defs>
+    <linearGradient id="doomMetal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F8FAFC"/><stop offset=".45" stop-color="#CBD5E1"/><stop offset="1" stop-color="#64748B"/>
+    </linearGradient>
+    <linearGradient id="doomHood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22C55E"/><stop offset="1" stop-color="#14532D"/>
+    </linearGradient>
+  </defs>
+  <!-- hood + cloak -->
+  <path d="M50 5C27 5 15 24 15 46L13 80C13 91 30 97 50 97C70 97 87 91 87 80L85 46C85 24 73 5 50 5Z" fill="url(#doomHood)" stroke="#052E16" stroke-width="2"/>
+  <!-- dark inside of the hood -->
+  <path d="M50 15C33 15 25 30 25 48L25 76L75 76L75 48C75 30 67 15 50 15Z" fill="#052E16"/>
+  <!-- metal mask -->
+  <path d="M50 21C38 21 31 31 31 45L32 62C33 71 41 77 50 77C59 77 67 71 68 62L69 45C69 31 62 21 50 21Z" fill="url(#doomMetal)" stroke="#334155" stroke-width="1.5"/>
+  <!-- shine on the metal -->
+  <path d="M38 27C35 32 34 38 34 45" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".7"/>
+  <!-- angry brows + nose ridge -->
+  <path d="M36 37L46 40M64 37L54 40" stroke="#334155" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M50 40V57" stroke="#64748B" stroke-width="2"/>
+  <!-- eye slits with a green glow -->
+  <rect x="36" y="42" width="11" height="5" rx="2.5" fill="#0F172A"/>
+  <rect x="53" y="42" width="11" height="5" rx="2.5" fill="#0F172A"/>
+  <ellipse cx="41.5" cy="44.5" rx="3" ry="1.6" fill="#A3E635"/>
+  <ellipse cx="58.5" cy="44.5" rx="3" ry="1.6" fill="#A3E635"/>
+  <!-- mouth grille -->
+  <rect x="41" y="60" width="18" height="7" rx="2" fill="#475569"/>
+  <path d="M45 60V67M50 60V67M55 60V67" stroke="#CBD5E1" stroke-width="1.2"/>
+  <!-- rivets -->
+  <g fill="#94A3B8" stroke="#475569" stroke-width=".6">
+    <circle cx="35" cy="53" r="1.6"/><circle cx="65" cy="53" r="1.6"/>
+    <circle cx="39" cy="70" r="1.6"/><circle cx="61" cy="70" r="1.6"/>
+  </g>
+  <!-- hood edge -->
+  <path d="M25 76L25 48C25 30 33 15 50 15C67 15 75 30 75 48L75 76" stroke="#4ADE80" stroke-width="1.5" fill="none" opacity=".6"/>
+</svg>`;
 
 /* 3. RULES ------------------------------------------------------------ */
 const PartyRules = {
-  // Raids and duels get tougher as the player clears more BattleQuest stages
-  scale(best) { return 1 + 0.2 * (best - 1); },
+  // Raids get tougher as the player clears more BattleQuest stages.
+  // Boss HP grows faster than boss ATK so a well-geared team can survive.
+  scale(best) { return 1 + 0.15 * (best - 1); },
+  atkScale(best) { return 1 + 0.08 * (best - 1); },
 
   // A classmate's battle stats, based on the player's own stats so the
   // match is fair, then adjusted by the classmate's skill.
@@ -69,9 +117,10 @@ const PartyRules = {
 
   // Raid loot is always Epic or better: roll boss loot until it isn't Rare
   // (boss loot is Rare/Epic/Legendary, so this ends up 75% Epic, 25% Legendary)
-  raidLoot(stage) {
+  // Special event bosses always drop Legendary.
+  raidLoot(stage, legendaryOnly) {
     let item;
-    do { item = BattleRules.makeItem(stage, true); } while (item.rarity === 'rare');
+    do { item = BattleRules.makeItem(stage, true); } while (item.rarity === 'rare' || (legendaryOnly && item.rarity !== 'legendary'));
     return item;
   }
 };
@@ -90,6 +139,11 @@ function partyMixin() {
     // The player's own battle stats in one object
     myStats() { return { atk: this.heroAtk(), def: this.heroDef(), hp: this.heroMaxHp(), crit: this.heroCrit() }; },
     raidBoss(id) { return RAID_BOSSES.find(b => b.id === id); },
+    // A boss's picture: custom art if it has one, otherwise its emoji
+    bossSprite(boss) {
+      if (boss.art === 'emperor-doom') return EMPEROR_DOOM_SVG;
+      return '<span>' + boss.emoji + '</span>';
+    },
     mateCard(mate) { return { ...mate, stats: PartyRules.mateStats(mate, this.myStats()) }; },
     classmateCards() { return EQ_DATA.classmates.map(c => this.mateCard(c)).sort((a, b) => b.stats.power - a.stats.power); },
     myPower() { const s = this.myStats(); return Math.round(s.atk + s.hp / 5); },
@@ -157,14 +211,16 @@ function partyMixin() {
       ];
       const teamHp = team.reduce((s, m) => s + m.hp, 0);
       const bossHp = Math.round(base.hp * scale);
-      this.raid = {
-        ...this.raid, phase: 'intro',
-        boss: { ...base, hp: bossHp, maxHp: bossHp, atk: Math.round(base.atk * scale) },
+      // Update the existing object (and keep the last question until a new one
+      // arrives) so a screen that's still closing never reads null.
+      Object.assign(this.raid, {
+        phase: 'intro',
+        boss: { ...base, hp: bossHp, maxHp: bossHp, atk: Math.round(base.atk * PartyRules.atkScale(this.hero.best)) },
         team, teamHp, teamMaxHp: teamHp, meter: 0,
-        deck: this.partyQuestions(base.levels), question: null, chosen: null,
+        deck: this.partyQuestions(base.levels), question: this.raid.question || null, chosen: null,
         combo: 0, bestCombo: 0, correct: 0, answered: 0,
         floats: [], log: [], bossAnim: '', message: '', loot: null, xpGained: 0
-      };
+      });
       Sound.go();
       clearInterval(raidTimer);
       setTimeout(() => { if (this.raid.phase === 'intro') this.nextRaidQuestion(); }, 1400);
@@ -274,7 +330,7 @@ function partyMixin() {
       if (r.phase === 'victory') return;
       clearInterval(raidTimer); raidTimer = null;
       r.phase = 'victory';
-      r.loot = PartyRules.raidLoot(Math.max(this.hero.best, 2));
+      r.loot = PartyRules.raidLoot(Math.max(this.hero.best, 2), !!r.boss.event);
       r.xpGained = r.boss.xp;
       const h = this.hero;
       h.inventory.push(r.loot);
@@ -296,6 +352,13 @@ function partyMixin() {
     // Team damage, biggest first (for the results screen)
     raidRanking() { return this.raid.team.slice().sort((a, b) => b.dmg - a.dmg); },
     raidTotalDmg() { return this.raid.team.reduce((s, m) => s + m.dmg, 0) || 1; },
+
+    // DEMO "Skip to end": the team wins the raid right away (your hit finishes it)
+    skipRaid() {
+      const r = this.raid;
+      if (!['intro', 'question', 'hit', 'feedback'].includes(r.phase)) return;
+      this.raidDamage(r.team[0], r.boss.hp, false);
+    },
 
     exitRaid() {
       this.leaveParty();
@@ -431,6 +494,16 @@ function partyMixin() {
       this.saveStudent();
 
       if (d.outcome === 'win') { Sound.fanfare(); Celebrate.big(); } else Sound.pop();
+    },
+
+    // DEMO "Skip to end": you win the duel right away (normal trophies + loot)
+    skipDuel() {
+      const d = this.duel;
+      if (!['intro', 'question', 'reveal'].includes(d.phase)) return;
+      clearInterval(duelTimer); duelTimer = null;
+      clearTimeout(duelBotTimer); duelBotTimer = null;
+      d.foe.hpNow = 0;
+      this.endDuel();
     },
 
     exitDuel() {

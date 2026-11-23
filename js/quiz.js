@@ -220,6 +220,25 @@ function quizMixin() {
 
     stopQuizTimer() { clearInterval(quizTimer); quizTimer = null; },
 
+    // DEMO "Skip to end": every question not answered yet counts as a
+    // correct answer at half time, then the results screen opens.
+    skipChallenge() {
+      const quiz = this.quiz;
+      if (!quiz || !['getready', 'question', 'feedback'].includes(quiz.phase)) return;
+      this.stopQuizTimer();
+      const start = quiz.phase === 'feedback' ? quiz.index + 1 : quiz.index;
+      quiz.questions.slice(start).forEach(q => {
+        quiz.streak++;
+        quiz.bestStreak = Math.max(quiz.bestStreak, quiz.streak);
+        const points = Scoring.points(QUIZ_TIME / 2, quiz.streak);
+        quiz.score += points;
+        quiz.correct++;
+        quiz.answers.push({ q, chosen: q.answer, isCorrect: true, points, time: QUIZ_TIME / 2 });
+      });
+      quiz.index = quiz.questions.length - 1;
+      this.finishChallenge();
+    },
+
     quitChallenge() {
       const back = this.quiz && !this.quiz.custom ? '#/student/subject/' + this.quiz.subjectId : '#/student';
       this.stopQuizTimer();

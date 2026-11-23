@@ -219,6 +219,10 @@
               </template>
             </div>
           </template>
+          <!-- DEMO: skip to the end (turn off with demoSkip in app.js) -->
+          <div x-show="demoSkip && ['getready','question','feedback'].includes(quiz.phase)" class="mt-auto pt-6 pb-2 text-center">
+            <button class="btn btn-sm bg-white/10 border border-white/20 text-white/80 hover:bg-white/20" @click="skipChallenge()">⏭ Skip to end (demo)</button>
+          </div>
         </div>
       </div>
     </template>
@@ -353,6 +357,10 @@
               </div>
             </div>
           </template>
+          <!-- DEMO: skip to the end (turn off with demoSkip in app.js) -->
+          <div x-show="demoSkip && ['intro','question','hit','feedback'].includes(fight.phase)" class="mt-auto pt-6 pb-2 text-center">
+            <button class="btn btn-sm bg-white/10 border border-white/20 text-white/80 hover:bg-white/20" @click="skipFight()">⏭ Skip to end (demo)</button>
+          </div>
         </div>
       </div>
     </template>
@@ -425,6 +433,7 @@
                 <div class="min-w-0">
                   <p class="font-display text-lg font-bold">Team Raid</p>
                   <p class="text-sm text-slate-600">Team up with 3 classmates to beat a giant boss.</p>
+                  <span class="badge badge-sm border-0 bg-lime-300 text-green-950 font-extrabold mt-1 event-pulse" x-text="'⭐ Event: ' + RAID_BOSSES.find(b => b.event).name"></span>
                   <p class="text-xs font-extrabold text-brand mt-0.5" x-text="(hero.raidWins || 0) + ' raids won'"></p>
                 </div>
               </a>
@@ -528,20 +537,50 @@
             <p class="text-xs text-white/70 mt-2">Prototype note: classmates are simulated players.</p>
           </section>
 
+          <!-- SPECIAL EVENT boss banner (bosses with event: true in party.js) -->
+          <template x-for="b in RAID_BOSSES.filter(x => x.event)" :key="b.id">
+            <button class="event-card w-full text-left rounded-3xl p-5 text-white shadow-lg" :class="raid.bossId===b.id && 'is-selected'" @click="raid.bossId=b.id; Sound.pop()">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="badge border-0 bg-lime-300 text-green-950 font-extrabold gap-1 event-pulse">⭐ SPECIAL EVENT</span>
+                <span class="badge border-0 bg-white/20 text-white font-bold">Open to everyone</span>
+                <span x-show="raid.bossId===b.id" class="badge border-0 bg-white text-green-800 font-extrabold ml-auto">✓ Selected</span>
+              </div>
+              <div class="flex items-center gap-4 mt-3">
+                <span class="event-sprite shrink-0" x-html="bossSprite(b)"></span>
+                <div class="min-w-0">
+                  <p class="font-display text-3xl font-bold leading-tight" x-text="b.name"></p>
+                  <p class="text-sm text-white/90 mt-1" x-text="b.line"></p>
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-2 mt-4 text-center">
+                <div class="bg-white/15 rounded-2xl py-2"><p class="text-lg">🌟</p><p class="text-xs font-extrabold">Legendary loot</p></div>
+                <div class="bg-white/15 rounded-2xl py-2"><p class="text-lg">✨</p><p class="text-xs font-extrabold" x-text="'+' + b.xp + ' XP'"></p></div>
+                <div class="bg-white/15 rounded-2xl py-2"><p class="text-lg">❤️</p><p class="text-xs font-extrabold" x-text="fmt(b.hp * PartyRules.scale(hero.best)) + ' HP'"></p></div>
+              </div>
+              <p class="text-center font-display font-bold mt-3" x-text="raid.bossId===b.id ? 'Pick your team below and start the raid!' : 'Tap to join the event raid!'"></p>
+            </button>
+          </template>
+
           <!-- 1. Boss -->
           <section class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
             <h2 class="font-display text-xl font-bold">1. Choose a raid boss</h2>
-            <div class="grid sm:grid-cols-3 gap-3 mt-3">
-              <template x-for="b in RAID_BOSSES" :key="b.id">
+            <p class="text-sm text-slate-600">Or join the special event above.</p>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
+              <template x-for="b in RAID_BOSSES.filter(x => !x.event)" :key="b.id">
                 <button class="rounded-2xl p-3 text-center border-2 transition" :class="raid.bossId===b.id ? 'border-brand bg-brand-light' : 'border-slate-200 hover:border-slate-300'" @click="raid.bossId=b.id; Sound.click()">
                   <p class="text-5xl" x-text="b.emoji"></p>
                   <p class="font-display font-bold leading-tight mt-1" x-text="b.name"></p>
                   <span class="badge badge-sm border-0 font-bold mt-1" :class="{ 'bg-green-100 text-green-800': b.tier==='Normal', 'bg-orange-100 text-orange-800': b.tier==='Hard', 'bg-amber-200 text-amber-900': b.tier==='Legendary' }" x-text="b.tier"></span>
-                  <p class="text-xs text-slate-600 font-bold mt-1" x-text="'❤️ ' + fmt(b.hp * PartyRules.scale(hero.best)) + ' · ⚔️ ' + Math.round(b.atk * PartyRules.scale(hero.best)) + ' · +' + b.xp + ' XP'"></p>
+                  <p class="text-xs text-slate-600 font-bold mt-1" x-text="'❤️ ' + fmt(b.hp * PartyRules.scale(hero.best)) + ' · ⚔️ ' + Math.round(b.atk * PartyRules.atkScale(hero.best)) + ' · +' + b.xp + ' XP'"></p>
+                  <p class="text-[11px] font-bold mt-1" :class="hero.best >= b.recommended ? 'text-green-700' : 'text-amber-700'"
+                     x-text="hero.best >= b.recommended ? '✓ Ready' : 'Stage ' + b.recommended + '+ recommended'"></p>
                 </button>
               </template>
             </div>
-            <p class="text-sm text-slate-600 mt-3" x-text="raidBoss(raid.bossId).line"></p>
+            <p x-show="!raidBoss(raid.bossId).event" class="text-sm text-slate-600 mt-3" x-text="raidBoss(raid.bossId).line"></p>
+            <p x-show="raidBoss(raid.bossId).event" class="text-sm font-bold text-green-700 mt-3" x-text="'⭐ Special event selected: ' + raidBoss(raid.bossId).name"></p>
+            <p x-show="hero.best < raidBoss(raid.bossId).recommended" class="text-sm font-bold text-amber-800 bg-amber-50 rounded-xl p-2 mt-2"
+               x-text="'⚠️ This boss is very strong! Reach Stage ' + raidBoss(raid.bossId).recommended + ' in BattleQuest and get better gear first. You can still try!'"></p>
           </section>
 
           <!-- 2. Team -->
@@ -596,12 +635,12 @@
 
       <!-- ===== BATTLEQUEST: TEAM RAID FIGHT (full screen) ===== -->
       <template x-if="screen==='student-battle' && param==='raid' && raid.phase!=='setup'">
-        <div class="fixed inset-0 z-40 battle-bg overflow-y-auto text-white">
+        <div class="fixed inset-0 z-40 overflow-y-auto text-white" :class="raid.boss.event ? 'event-bg' : 'battle-bg'">
           <div class="max-w-3xl mx-auto min-h-full flex flex-col px-4 py-4">
             <div class="flex items-center gap-3">
               <button class="btn btn-circle btn-sm bg-white/15 border-0 text-white hover:bg-white/25" @click="exitRaid()" aria-label="Leave raid"><i data-lucide="x" class="w-5 h-5"></i></button>
               <div class="min-w-0">
-                <p class="text-xs text-white/70 font-bold" x-text="'Team Raid · ' + raid.boss.tier"></p>
+                <p class="text-xs text-white/70 font-bold" x-text="raid.boss.event ? '⭐ SPECIAL EVENT RAID' : 'Team Raid · ' + raid.boss.tier"></p>
                 <p class="font-display font-bold truncate" x-text="raid.boss.name"></p>
               </div>
               <div class="ml-auto flex flex-wrap justify-end gap-1.5">
@@ -617,7 +656,7 @@
                 <span class="dmg-float" :class="fl.cls" :style="`margin-left:${fl.x}px`" x-text="fl.text"></span>
               </template>
               <div :class="[raid.bossAnim, raid.phase==='victory' && 'monster-defeated']">
-                <span class="monster-sprite is-boss" x-text="raid.boss.emoji"></span>
+                <span class="monster-sprite is-boss" x-html="bossSprite(raid.boss)"></span>
               </div>
               <div class="hp-bar mt-2 !h-4"><div class="bg-rose-500" :style="`width:${raid.boss.hp / raid.boss.maxHp * 100}%`"></div></div>
               <p class="text-xs font-extrabold mt-1" x-text="'❤️ ' + fmt(raid.boss.hp) + ' / ' + fmt(raid.boss.maxHp)"></p>
@@ -733,6 +772,10 @@
                 </div>
               </div>
             </template>
+            <!-- DEMO: skip to the end (turn off with demoSkip in app.js) -->
+            <div x-show="demoSkip && ['intro','question','hit','feedback'].includes(raid.phase)" class="mt-auto pt-6 pb-2 text-center">
+              <button class="btn btn-sm bg-white/10 border border-white/20 text-white/80 hover:bg-white/20" @click="skipRaid()">⏭ Skip to end (demo)</button>
+            </div>
           </div>
         </div>
       </template>
@@ -892,6 +935,10 @@
                 </div>
               </div>
             </template>
+            <!-- DEMO: skip to the end (turn off with demoSkip in app.js) -->
+            <div x-show="demoSkip && ['intro','question','reveal'].includes(duel.phase)" class="mt-auto pt-6 pb-2 text-center">
+              <button class="btn btn-sm bg-white/10 border border-white/20 text-white/80 hover:bg-white/20" @click="skipDuel()">⏭ Skip to end (demo)</button>
+            </div>
           </div>
         </div>
       </template>
@@ -1844,6 +1891,7 @@
             </template>
 
             <div x-show="['lobby','question','reveal'].includes(live.phase)" class="mt-6 text-right">
+              <button x-show="demoSkip && ['question','reveal'].includes(live.phase)" class="btn btn-ghost btn-sm text-slate-500" @click="liveSkipToPodium()">⏭ Skip to podium (demo)</button>
               <button class="btn btn-ghost btn-sm text-slate-500" @click="liveCleanup()"><i data-lucide="square" class="w-4 h-4"></i> End game</button>
             </div>
           </div>

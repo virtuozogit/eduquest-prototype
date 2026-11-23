@@ -392,6 +392,13 @@ function battleMixin() {
 
     nextFight() { Sound.click(); this.startFight(); },
 
+    // DEMO "Skip to end": defeat the monster right away (normal loot + XP)
+    skipFight() {
+      const f = this.fight;
+      if (!f || !['intro', 'question', 'hit', 'feedback'].includes(f.phase)) return;
+      this.damageMonster(f.monster.hp, 'hit');
+    },
+
     // (Like quiz.js, we never set fight to null while its screen is open;
     // phase 'done' sends the player back to camp.)
     leaveFight() {

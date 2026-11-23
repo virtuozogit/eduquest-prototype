@@ -220,6 +220,12 @@ function liveMixin() {
       setTimeout(() => { Sound.fanfare(); Celebrate.big(); }, 400);
     },
 
+    // DEMO "Skip to podium": end the game now with the current scores
+    liveSkipToPodium() {
+      if (!['question', 'reveal'].includes(this.live.phase)) return;
+      this.liveEnd();
+    },
+
     liveClearTimers() {
       liveTimers.forEach(clearTimeout);
       liveTimers = [];

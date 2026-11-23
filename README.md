@@ -75,7 +75,7 @@ A quiz-powered RPG that uses the same questions as the quests. Open it from the 
 
 There is no server, so classmates are **simulated players** built from the 20 demo classmates. Each one's skill sets how often they answer right and how fast.
 
-- **Team Raid:** pick 3 classmates (or tap **Quick match**) and one of three raid bosses: Giant Kapre (Normal), Bakunawa (Hard), or Minokawa (Legendary). You answer questions while your teammates attack on their own. The team shares one HP bar. The boss hits everyone when its meter fills, and hits again when you answer wrong. Winning gives guaranteed **Epic or Legendary** loot, XP, and a damage ranking with an MVP.
+- **Team Raid:** pick 3 classmates (or tap **Quick match**) and a raid boss: Giant Kapre (Normal), Bakunawa (Hard), Minokawa (Legendary), or the **special event boss, Emperor Doom**. Emperor Doom has his own highlighted event banner, is beatable by every player (even at Stage 1), and always drops **Legendary** loot. To make a different boss the event, set `event: true` on it in `js/party.js`. You answer questions while your teammates attack on their own. The team shares one HP bar. The boss hits everyone when its meter fills, and hits again when you answer wrong. Winning gives guaranteed **Epic or Legendary** loot, XP, and a damage ranking with an MVP.
 - **Duel:** pick a classmate (labeled Easier, Even, or Tough). You both get the same question with a 15-second timer. Each right answer attacks the other player, and the **faster** right answer does +25% damage. First to 0 HP loses, or the one with more HP left after 10 rounds wins. Every duel earns trophies and XP, even a loss (win +20, draw +10, loss +5 trophies), so students are never punished for trying. A **win also drops loot**, Rare or better when you beat a Tough opponent.
 
 ### Child safety (from our business plan)
@@ -112,5 +112,7 @@ js/app.js         Alpine app: routing (#/student, #/teacher/…), screen time, a
 **Libraries (all from CDNs):** Tailwind CSS (Play CDN) + DaisyUI · Alpine.js · Chart.js · canvas-confetti · Lucide icons · DiceBear avatars · Google Fonts (Fredoka, Nunito). Howler.js is not loaded because there are no audio files. Sounds are generated with the Web Audio API in `js/sound.js`. The browser console shows a “cdn.tailwindcss.com should not be used in production” warning. That is expected for a prototype.
 
 **Saved data:** everything is stored in the browser’s `localStorage` under keys starting with `eduquest.v1.`. Click **Reset demo** (footer, teacher sidebar, or Parent → Delete data) to restore the starting demo.
+
+**Skip to end (demo):** every quest challenge, BattleQuest fight, Team Raid, and Duel has a **⏭ Skip to end (demo)** button at the bottom that finishes it as a win (Host Live Game has **Skip to podium**). It is for presentations. To hide it, set `demoSkip: false` in `js/app.js`.
 
 **Two-tab live game:** both tabs must be in the **same browser**. It also works from a double-clicked file in Chrome/Edge, but the GitHub Pages URL is the most reliable.

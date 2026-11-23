@@ -33,6 +33,12 @@ function app() {
     assignments: Store.get('assignments', []),
     customQuizzes: Store.get('quizzes', []),
 
+    // ---- Demo controls ----
+    // Shows a "⏭ Skip to end (demo)" button at the bottom of every quiz and
+    // game so presenters can jump to the results. Set to false to hide it
+    // (students could otherwise use it to earn XP and loot for free).
+    demoSkip: true,
+
     // ---- UI state ----
     toastMsg: '',
     showBreak: false,
