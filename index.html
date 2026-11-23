@@ -360,7 +360,7 @@
     <main class="max-w-3xl mx-auto px-4 pt-4 pb-6">
 
       <!-- ===== BATTLEQUEST: CAMP (stage picker + your hero) ===== -->
-      <template x-if="screen==='student-battle' && param!=='bag'">
+      <template x-if="screen==='student-battle' && !param">
         <div class="space-y-5 anim-slide-up">
           <section class="rounded-3xl p-5 text-white battle-bg shadow-lg">
             <div class="flex items-center gap-4">
@@ -414,6 +414,29 @@
               </template>
             </div>
             <button class="btn btn-primary btn-lg btn-block mt-4 btn-3d text-lg" @click="startFight()"><i data-lucide="swords" class="w-5 h-5"></i> Fight!</button>
+          </section>
+
+          <!-- Play with classmates -->
+          <section>
+            <h2 class="font-display text-xl font-bold mb-2">Play with classmates</h2>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <a href="#/student/battle/raid" class="flex items-center gap-3 p-4 rounded-3xl bg-white border border-slate-100 shadow-sm hover:border-brand" @click="Sound.click()">
+                <span class="text-4xl">👥</span>
+                <div class="min-w-0">
+                  <p class="font-display text-lg font-bold">Team Raid</p>
+                  <p class="text-sm text-slate-600">Team up with 3 classmates to beat a giant boss.</p>
+                  <p class="text-xs font-extrabold text-brand mt-0.5" x-text="(hero.raidWins || 0) + ' raids won'"></p>
+                </div>
+              </a>
+              <a href="#/student/battle/duel" class="flex items-center gap-3 p-4 rounded-3xl bg-white border border-slate-100 shadow-sm hover:border-brand" @click="Sound.click()">
+                <span class="text-4xl">🤺</span>
+                <div class="min-w-0">
+                  <p class="font-display text-lg font-bold">Duel</p>
+                  <p class="text-sm text-slate-600">Battle a classmate. Answer right and fast to win!</p>
+                  <p class="text-xs font-extrabold text-brand mt-0.5" x-text="'🏆 ' + duelRecord().trophies + ' trophies · ' + duelRecord().wins + 'W ' + duelRecord().losses + 'L'"></p>
+                </div>
+              </a>
+            </div>
           </section>
 
           <!-- How to play -->
@@ -491,6 +514,385 @@
             </div>
             <p class="text-xs text-slate-500 mt-3" x-text="'The bag holds ' + INVENTORY_LIMIT + ' items. When it’s full, the oldest unequipped items are dropped.'"></p>
           </section>
+        </div>
+      </template>
+
+      <!-- ===== BATTLEQUEST: TEAM RAID SETUP (#/student/battle/raid) ===== -->
+      <template x-if="screen==='student-battle' && param==='raid'">
+        <div class="space-y-5 anim-slide-up">
+          <a href="#/student/battle" class="btn btn-ghost btn-sm gap-1 -ml-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to camp</a>
+          <section class="rounded-3xl p-5 text-white battle-bg shadow-lg">
+            <p class="text-white/80 text-sm font-bold">BattleQuest</p>
+            <h1 class="font-display text-3xl font-bold">👥 Team Raid</h1>
+            <p class="text-sm mt-1">Team up with 3 classmates. You answer questions while your teammates attack too. Beat the boss together for Epic or Legendary loot!</p>
+            <p class="text-xs text-white/70 mt-2">Prototype note: classmates are simulated players.</p>
+          </section>
+
+          <!-- 1. Boss -->
+          <section class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+            <h2 class="font-display text-xl font-bold">1. Choose a raid boss</h2>
+            <div class="grid sm:grid-cols-3 gap-3 mt-3">
+              <template x-for="b in RAID_BOSSES" :key="b.id">
+                <button class="rounded-2xl p-3 text-center border-2 transition" :class="raid.bossId===b.id ? 'border-brand bg-brand-light' : 'border-slate-200 hover:border-slate-300'" @click="raid.bossId=b.id; Sound.click()">
+                  <p class="text-5xl" x-text="b.emoji"></p>
+                  <p class="font-display font-bold leading-tight mt-1" x-text="b.name"></p>
+                  <span class="badge badge-sm border-0 font-bold mt-1" :class="{ 'bg-green-100 text-green-800': b.tier==='Normal', 'bg-orange-100 text-orange-800': b.tier==='Hard', 'bg-amber-200 text-amber-900': b.tier==='Legendary' }" x-text="b.tier"></span>
+                  <p class="text-xs text-slate-600 font-bold mt-1" x-text="'❤️ ' + fmt(b.hp * PartyRules.scale(hero.best)) + ' · ⚔️ ' + Math.round(b.atk * PartyRules.scale(hero.best)) + ' · +' + b.xp + ' XP'"></p>
+                </button>
+              </template>
+            </div>
+            <p class="text-sm text-slate-600 mt-3" x-text="raidBoss(raid.bossId).line"></p>
+          </section>
+
+          <!-- 2. Team -->
+          <section class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="font-display text-xl font-bold" x-text="'2. Pick your team (' + raid.picked.length + '/' + RAID_TEAM_SIZE + ')'"></h2>
+              <button class="btn btn-sm btn-outline" @click="quickMatch()">🎲 Quick match</button>
+            </div>
+            <div class="flex gap-3 mt-3">
+              <div class="text-center">
+                <img :src="avatarUrl(student.avatar)" class="w-14 h-14 rounded-full bg-brand-light ring-2 ring-brand mx-auto" alt="">
+                <p class="text-xs font-extrabold mt-1">You</p>
+              </div>
+              <template x-for="n in RAID_TEAM_SIZE" :key="n">
+                <div class="text-center">
+                  <template x-if="raid.picked[n-1]">
+                    <img :src="avatarUrl(EQ_DATA.classmates.find(c => c.id === raid.picked[n-1]).avatar)" class="w-14 h-14 rounded-full bg-slate-100 mx-auto anim-bounce-in" alt="">
+                  </template>
+                  <template x-if="!raid.picked[n-1]">
+                    <div class="w-14 h-14 rounded-full border-2 border-dashed border-slate-300 grid place-items-center text-slate-400 font-bold mx-auto">?</div>
+                  </template>
+                  <p class="text-xs font-bold mt-1 truncate w-14" x-text="raid.picked[n-1] ? EQ_DATA.classmates.find(c => c.id === raid.picked[n-1]).nickname : 'Open'"></p>
+                </div>
+              </template>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4 max-h-72 overflow-y-auto pr-1">
+              <template x-for="m in classmateCards()" :key="m.id">
+                <button class="flex items-center gap-2 rounded-xl p-2 border-2 text-left" :class="raid.picked.includes(m.id) ? 'border-brand bg-brand-light' : 'border-slate-100 hover:border-slate-300'" @click="togglePick(m.id)">
+                  <img :src="avatarUrl(m.avatar)" class="w-9 h-9 rounded-full bg-slate-100 shrink-0" alt="">
+                  <div class="min-w-0">
+                    <p class="font-bold text-sm truncate" x-text="m.nickname"></p>
+                    <p class="text-[11px] text-slate-500 font-bold" x-text="'⚡ ' + m.stats.power + ' power'"></p>
+                  </div>
+                  <span x-show="raid.picked.includes(m.id)" class="ml-auto text-brand font-extrabold">✓</span>
+                </button>
+              </template>
+            </div>
+          </section>
+
+          <section class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+            <p class="text-xs font-extrabold text-slate-500 mb-1">Questions from</p>
+            <div class="flex flex-wrap gap-2">
+              <button class="btn btn-sm rounded-full" :class="battleSubject==='all' ? 'btn-primary' : 'btn-ghost bg-slate-100'" @click="battleSubject='all'">🎲 All subjects</button>
+              <template x-for="s in data.subjects" :key="s.id">
+                <button class="btn btn-sm rounded-full" :class="battleSubject===s.id ? 'btn-primary' : 'btn-ghost bg-slate-100'" @click="battleSubject=s.id" x-text="s.emoji + ' ' + s.name"></button>
+              </template>
+            </div>
+            <button class="btn btn-primary btn-lg btn-block mt-4 btn-3d text-lg" :disabled="raid.picked.length !== RAID_TEAM_SIZE" @click="startRaid()">👥 Start Raid!</button>
+          </section>
+        </div>
+      </template>
+
+      <!-- ===== BATTLEQUEST: TEAM RAID FIGHT (full screen) ===== -->
+      <template x-if="screen==='student-battle' && param==='raid' && raid.phase!=='setup'">
+        <div class="fixed inset-0 z-40 battle-bg overflow-y-auto text-white">
+          <div class="max-w-3xl mx-auto min-h-full flex flex-col px-4 py-4">
+            <div class="flex items-center gap-3">
+              <button class="btn btn-circle btn-sm bg-white/15 border-0 text-white hover:bg-white/25" @click="exitRaid()" aria-label="Leave raid"><i data-lucide="x" class="w-5 h-5"></i></button>
+              <div class="min-w-0">
+                <p class="text-xs text-white/70 font-bold" x-text="'Team Raid · ' + raid.boss.tier"></p>
+                <p class="font-display font-bold truncate" x-text="raid.boss.name"></p>
+              </div>
+              <div class="ml-auto flex flex-wrap justify-end gap-1.5">
+                <span class="badge border-0 font-extrabold" :class="raid.combo > 0 ? 'bg-orange-400 text-orange-950' : 'bg-white/15 text-white/70'"
+                      x-text="raid.combo > 0 ? '🔥 Combo ' + raid.combo : 'No combo'"></span>
+                <span class="badge border-0 font-extrabold bg-amber-300 text-amber-950" x-text="'💥 ' + raid.team[0].crit + '% crit'"></span>
+              </div>
+            </div>
+
+            <!-- Boss -->
+            <div class="text-center relative mt-3">
+              <template x-for="fl in raid.floats.filter(x => x.side==='boss')" :key="fl.id">
+                <span class="dmg-float" :class="fl.cls" :style="`margin-left:${fl.x}px`" x-text="fl.text"></span>
+              </template>
+              <div :class="[raid.bossAnim, raid.phase==='victory' && 'monster-defeated']">
+                <span class="monster-sprite is-boss" x-text="raid.boss.emoji"></span>
+              </div>
+              <div class="hp-bar mt-2 !h-4"><div class="bg-rose-500" :style="`width:${raid.boss.hp / raid.boss.maxHp * 100}%`"></div></div>
+              <p class="text-xs font-extrabold mt-1" x-text="'❤️ ' + fmt(raid.boss.hp) + ' / ' + fmt(raid.boss.maxHp)"></p>
+              <div class="h-1.5 rounded-full bg-white/15 overflow-hidden mt-1 max-w-xs mx-auto" role="progressbar" aria-label="Boss attack meter">
+                <div class="h-full bg-amber-300 timer-fill" :style="`width:${raid.meter / RAID_BOSS_SECONDS * 100}%`"></div>
+              </div>
+              <p class="text-[11px] text-white/70 font-bold mt-0.5">Boss attack meter</p>
+            </div>
+
+            <!-- Team -->
+            <div class="relative mt-3 bg-white/10 rounded-2xl p-3">
+              <template x-for="fl in raid.floats.filter(x => x.side==='team')" :key="fl.id">
+                <span class="dmg-float" :class="fl.cls" :style="`margin-left:${fl.x}px`" x-text="fl.text"></span>
+              </template>
+              <div class="grid grid-cols-4 gap-2 text-center">
+                <template x-for="m in raid.team" :key="m.id">
+                  <div>
+                    <img :src="avatarUrl(m.avatar)" class="w-11 h-11 rounded-full bg-white/20 mx-auto" :class="m.isMe && 'ring-2 ring-sun'" alt="">
+                    <p class="text-[11px] font-extrabold truncate" x-text="m.isMe ? 'You' : m.nickname"></p>
+                    <p class="text-[10px] text-white/70 font-bold" x-text="fmt(m.dmg) + ' dmg'"></p>
+                  </div>
+                </template>
+              </div>
+              <div class="hp-bar mt-2"><div class="bg-emerald-400" :style="`width:${raid.teamHp / raid.teamMaxHp * 100}%`"></div></div>
+              <p class="text-xs font-extrabold mt-1 text-center" x-text="'💚 Team HP ' + fmt(raid.teamHp) + ' / ' + fmt(raid.teamMaxHp)"></p>
+              <ul class="mt-2 space-y-0.5 text-xs text-white/85 min-h-[3.5rem]">
+                <template x-for="l in raid.log.slice(0, 3)" :key="l.id"><li class="anim-slide-up truncate" x-text="l.text"></li></template>
+              </ul>
+            </div>
+
+            <!-- Intro -->
+            <template x-if="raid.phase==='intro'">
+              <div class="text-center mt-6 anim-bounce-in">
+                <p class="font-display text-3xl font-bold" x-text="'⚠️ ' + raid.boss.name + ' appears!'"></p>
+                <p class="text-white/80 mt-1" x-text="raid.boss.line"></p>
+              </div>
+            </template>
+
+            <!-- Question -->
+            <template x-if="['question','hit','feedback'].includes(raid.phase) && raid.question">
+              <div class="mt-4">
+                <div class="bg-white text-slate-900 rounded-3xl p-4 sm:p-6 shadow-xl">
+                  <p class="text-xs font-extrabold text-slate-500 capitalize" x-text="raid.question.subjectEmoji + ' ' + raid.question.difficulty"></p>
+                  <p class="font-display text-lg sm:text-2xl font-semibold leading-snug" x-text="raid.question.question"></p>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mt-3">
+                  <template x-for="(choice, i) in raid.question.choices" :key="i">
+                    <button class="ans" :class="[shapes[i].cls, raid.phase!=='question' ? (i===raid.question.answer ? 'is-correct' : (i===raid.chosen ? 'is-chosen-wrong' : 'is-dim')) : '']"
+                            :disabled="raid.phase!=='question'" @click="raidAnswer(i)" :aria-label="shapes[i].label + ': ' + choice">
+                      <span x-html="shapeSvg(i)"></span><span x-text="choice"></span>
+                    </button>
+                  </template>
+                </div>
+                <p x-show="raid.phase==='hit'" class="text-center font-display text-2xl font-bold mt-4 anim-pop" x-text="'⚔️ ' + raid.message"></p>
+                <template x-if="raid.phase==='feedback'">
+                  <div class="feedback-panel mt-4 bg-white text-slate-900 rounded-3xl p-5 shadow-xl">
+                    <p class="font-display text-xl font-bold text-amber-700" x-text="'💡 ' + raid.message"></p>
+                    <p class="mt-2 font-bold" x-text="'The answer is: ' + raid.question.choices[raid.question.answer]"></p>
+                    <div class="mt-3 bg-brand-light rounded-2xl p-3 text-sm sm:text-base">
+                      <p class="font-extrabold text-brand">Why?</p>
+                      <p x-text="raid.question.explain"></p>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2">Your team is still fighting — hurry back!</p>
+                    <button class="btn btn-primary btn-lg btn-block mt-3 btn-3d" @click="raidContinue()">Back to the raid! <i data-lucide="swords" class="w-5 h-5"></i></button>
+                  </div>
+                </template>
+              </div>
+            </template>
+
+            <!-- Victory -->
+            <template x-if="raid.phase==='victory'">
+              <div class="mt-5 bg-white text-slate-900 rounded-3xl p-6 shadow-xl text-center anim-bounce-in">
+                <p class="font-display text-3xl font-bold text-brand">Raid cleared! 🏆</p>
+                <p class="text-slate-600 font-bold mt-1" x-text="'Teamwork wins! ' + raid.correct + ' of ' + raid.answered + ' correct · best combo ' + raid.bestCombo + ' · +' + raid.xpGained + ' XP'"></p>
+                <div class="text-left mt-4 space-y-2">
+                  <template x-for="(m, i) in raidRanking()" :key="m.id">
+                    <div class="flex items-center gap-2">
+                      <img :src="avatarUrl(m.avatar)" class="w-8 h-8 rounded-full bg-slate-100" alt="">
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold truncate" x-text="(i===0 ? '👑 MVP · ' : '') + (m.isMe ? m.nickname + ' (you)' : m.nickname)"></p>
+                        <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full" :class="m.isMe ? 'bg-brand' : 'bg-slate-400'" :style="`width:${m.dmg / raidTotalDmg() * 100}%`"></div></div>
+                      </div>
+                      <p class="text-sm font-extrabold w-20 text-right" x-text="fmt(m.dmg) + ' dmg'"></p>
+                    </div>
+                  </template>
+                </div>
+                <p class="font-extrabold mt-5 text-sm uppercase tracking-wide text-slate-500">Raid loot!</p>
+                <div class="loot-card mx-auto mt-2" :class="RARITIES[raid.loot.rarity].cls">
+                  <p class="text-5xl" x-text="raid.loot.emoji"></p>
+                  <p class="font-display text-xl font-bold mt-1" x-text="raid.loot.name"></p>
+                  <p class="text-xs font-extrabold uppercase" x-text="RARITIES[raid.loot.rarity].name + ' ' + (raid.loot.type || SLOTS[raid.loot.slot].label)"></p>
+                  <p class="font-extrabold mt-1" x-text="itemStats(raid.loot)"></p>
+                  <p class="text-xs font-bold mt-1" x-show="!isEquipped(raid.loot)" :class="isUpgrade(raid.loot) ? 'text-green-700' : 'text-slate-500'" x-text="'vs. yours: ' + compareText(raid.loot)"></p>
+                </div>
+                <button x-show="!isEquipped(raid.loot)" class="btn btn-secondary btn-sm mt-3" @click="equip(raid.loot)">Equip it</button>
+                <p x-show="isEquipped(raid.loot)" class="text-green-700 font-extrabold text-sm mt-3">✓ Equipped</p>
+                <div class="grid grid-cols-2 gap-3 mt-5">
+                  <button class="btn btn-ghost" @click="exitRaid()">Back to camp</button>
+                  <button class="btn btn-primary btn-3d" @click="startRaid()">Raid again</button>
+                </div>
+              </div>
+            </template>
+
+            <!-- Defeat (gentle) -->
+            <template x-if="raid.phase==='defeat'">
+              <div class="mt-5 bg-white text-slate-900 rounded-3xl p-6 shadow-xl text-center anim-bounce-in">
+                <p class="text-5xl">🌱</p>
+                <p class="font-display text-2xl font-bold mt-2" x-text="raid.boss.name + ' was too strong this time!'"></p>
+                <p class="text-slate-600 mt-1" x-text="'Your team did ' + fmt(raidTotalDmg()) + ' damage. Try an easier boss, pick stronger teammates, or equip better gear.'"></p>
+                <div class="grid grid-cols-2 gap-3 mt-5">
+                  <button class="btn btn-ghost" @click="leaveParty()">Change team</button>
+                  <button class="btn btn-primary btn-3d" @click="startRaid()">Try again</button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <!-- ===== BATTLEQUEST: DUEL SETUP (#/student/battle/duel) ===== -->
+      <template x-if="screen==='student-battle' && param==='duel'">
+        <div class="space-y-5 anim-slide-up">
+          <a href="#/student/battle" class="btn btn-ghost btn-sm gap-1 -ml-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to camp</a>
+          <section class="rounded-3xl p-5 text-white battle-bg shadow-lg">
+            <p class="text-white/80 text-sm font-bold">BattleQuest</p>
+            <h1 class="font-display text-3xl font-bold">🤺 Duel</h1>
+            <p class="text-sm mt-1">You and a classmate get the same question. A right answer attacks, and the faster right answer hits 25% harder! Win to earn loot.</p>
+            <div class="grid grid-cols-4 gap-2 mt-4 text-center">
+              <div class="bg-white/15 rounded-2xl py-2"><p class="font-display text-xl font-bold" x-text="duelRecord().trophies"></p><p class="text-[11px] font-bold">🏆 trophies</p></div>
+              <div class="bg-white/15 rounded-2xl py-2"><p class="font-display text-xl font-bold" x-text="duelRecord().wins"></p><p class="text-[11px] font-bold">wins</p></div>
+              <div class="bg-white/15 rounded-2xl py-2"><p class="font-display text-xl font-bold" x-text="duelRecord().draws"></p><p class="text-[11px] font-bold">draws</p></div>
+              <div class="bg-white/15 rounded-2xl py-2"><p class="font-display text-xl font-bold" x-text="duelRecord().losses"></p><p class="text-[11px] font-bold">losses</p></div>
+            </div>
+            <p class="text-xs text-white/70 mt-2">You earn trophies even when you lose. Prototype note: classmates are simulated players.</p>
+          </section>
+
+          <section class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <h2 class="font-display text-xl font-bold">Choose an opponent</h2>
+              <p class="text-sm font-bold text-slate-600" x-text="'Your power: ⚡ ' + myPower()"></p>
+            </div>
+            <div class="flex flex-wrap gap-2 mt-3">
+              <button class="btn btn-xs sm:btn-sm rounded-full" :class="battleSubject==='all' ? 'btn-primary' : 'btn-ghost bg-slate-100'" @click="battleSubject='all'">🎲 All subjects</button>
+              <template x-for="s in data.subjects" :key="s.id">
+                <button class="btn btn-xs sm:btn-sm rounded-full" :class="battleSubject===s.id ? 'btn-primary' : 'btn-ghost bg-slate-100'" @click="battleSubject=s.id" x-text="s.emoji + ' ' + s.name"></button>
+              </template>
+            </div>
+            <div class="space-y-2 mt-4">
+              <template x-for="m in classmateCards()" :key="m.id">
+                <div class="flex items-center gap-3 rounded-2xl bg-slate-50 p-2.5">
+                  <img :src="avatarUrl(m.avatar)" class="w-10 h-10 rounded-full bg-white shrink-0" alt="">
+                  <div class="flex-1 min-w-0">
+                    <p class="font-bold truncate" x-text="m.nickname"></p>
+                    <p class="text-xs text-slate-500 font-bold truncate" :title="'❤️ ' + m.stats.hp + ' HP · ⚔️ ' + m.stats.atk + ' ATK'" x-text="'⚡ ' + m.stats.power + ' power · 💥 ' + m.stats.crit + '% crit'"></p>
+                  </div>
+                  <span class="badge badge-sm border-0 font-bold shrink-0"
+                        :class="m.stats.power > myPower() * 1.1 ? 'bg-rose-100 text-rose-800' : (m.stats.power < myPower() * 0.9 ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800')"
+                        x-text="m.stats.power > myPower() * 1.1 ? 'Tough' : (m.stats.power < myPower() * 0.9 ? 'Easier' : 'Even')"></span>
+                  <button class="btn btn-primary btn-sm shrink-0" @click="startDuel(m.id)">Duel</button>
+                </div>
+              </template>
+            </div>
+          </section>
+        </div>
+      </template>
+
+      <!-- ===== BATTLEQUEST: DUEL FIGHT (full screen) ===== -->
+      <template x-if="screen==='student-battle' && param==='duel' && duel.phase!=='setup'">
+        <div class="fixed inset-0 z-40 battle-bg overflow-y-auto text-white">
+          <div class="max-w-3xl mx-auto min-h-full flex flex-col px-4 py-4">
+            <div class="flex items-center gap-3">
+              <button class="btn btn-circle btn-sm bg-white/15 border-0 text-white hover:bg-white/25" @click="exitDuel()" aria-label="Leave duel"><i data-lucide="x" class="w-5 h-5"></i></button>
+              <p class="font-display font-bold">🤺 Duel</p>
+              <span class="ml-auto badge border-0 bg-white/15 text-white font-extrabold" x-text="'Round ' + Math.max(1, duel.round) + ' / ' + DUEL_MAX_ROUNDS"></span>
+            </div>
+
+            <!-- Fighters -->
+            <div class="grid grid-cols-[1fr_auto_1fr] gap-2 mt-4 items-center">
+              <div class="text-center relative">
+                <template x-for="fl in duel.floats.filter(x => x.side==='me')" :key="fl.id">
+                  <span class="dmg-float" :class="fl.cls" :style="`margin-left:${fl.x}px`" x-text="fl.text"></span>
+                </template>
+                <div :class="duel.meAnim"><img :src="avatarUrl(duel.me.avatar)" class="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full bg-white/20 ring-4 ring-sun" alt="You"></div>
+                <p class="font-display font-bold mt-1 truncate" x-text="duel.me.nickname"></p>
+                <div class="hp-bar mt-1"><div class="bg-emerald-400" :style="`width:${duel.me.hpNow / duel.me.hp * 100}%`"></div></div>
+                <p class="text-xs font-extrabold mt-1" x-text="'❤️ ' + duel.me.hpNow + ' / ' + duel.me.hp"></p>
+                <p class="text-[11px] font-bold mt-1 h-4" :class="duel.myChoice !== null ? 'text-emerald-300' : 'text-white/60'" x-text="duel.phase==='question' ? (duel.myChoice !== null ? '✓ Locked in' : 'Your turn!') : ''"></p>
+              </div>
+              <p class="font-display text-2xl font-bold text-sun">VS</p>
+              <div class="text-center relative">
+                <template x-for="fl in duel.floats.filter(x => x.side==='foe')" :key="fl.id">
+                  <span class="dmg-float" :class="fl.cls" :style="`margin-left:${fl.x}px`" x-text="fl.text"></span>
+                </template>
+                <div :class="duel.foeAnim"><img :src="avatarUrl(duel.foe.avatar)" class="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full bg-white/20 ring-4 ring-rose-400" alt="Opponent"></div>
+                <p class="font-display font-bold mt-1 truncate" x-text="duel.foe.nickname"></p>
+                <div class="hp-bar mt-1"><div class="bg-rose-500" :style="`width:${duel.foe.hpNow / duel.foe.hp * 100}%`"></div></div>
+                <p class="text-xs font-extrabold mt-1" x-text="'❤️ ' + duel.foe.hpNow + ' / ' + duel.foe.hp"></p>
+                <p class="text-[11px] font-bold mt-1 h-4" :class="duel.foeChoice !== null ? 'text-emerald-300' : 'text-white/60'" x-text="duel.phase==='question' ? (duel.foeChoice !== null ? '✓ Answered!' : 'Thinking…') : ''"></p>
+              </div>
+            </div>
+
+            <!-- Intro -->
+            <template x-if="duel.phase==='intro'">
+              <div class="text-center mt-8 anim-bounce-in">
+                <p class="font-display text-3xl font-bold" x-text="duel.me.nickname + ' vs ' + duel.foe.nickname + '!'"></p>
+                <p class="text-white/80 mt-1">Answer right to attack. Be faster for +25% damage!</p>
+              </div>
+            </template>
+
+            <!-- Question + reveal -->
+            <template x-if="['question','reveal'].includes(duel.phase) && duel.question">
+              <div class="mt-4">
+                <div class="flex items-center gap-3" x-show="duel.phase==='question'">
+                  <div class="w-10 h-10 shrink-0 rounded-full bg-white text-brand grid place-items-center font-display text-lg font-bold" x-text="Math.ceil(duel.timeLeft)"></div>
+                  <div class="flex-1 h-2.5 rounded-full bg-white/20 overflow-hidden"><div class="h-full rounded-full timer-fill" :class="duel.timeLeft <= 5 ? 'bg-rose-400' : 'bg-sun'" :style="`width:${duel.timeLeft / DUEL_TIME * 100}%`"></div></div>
+                </div>
+                <div class="bg-white text-slate-900 rounded-3xl p-4 sm:p-6 shadow-xl mt-3">
+                  <p class="text-xs font-extrabold text-slate-500 capitalize" x-text="duel.question.subjectEmoji + ' ' + duel.question.difficulty"></p>
+                  <p class="font-display text-lg sm:text-2xl font-semibold leading-snug" x-text="duel.question.question"></p>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mt-3">
+                  <template x-for="(choice, i) in duel.question.choices" :key="i">
+                    <button class="ans" :class="[shapes[i].cls, duel.phase==='reveal' ? (i===duel.question.answer ? 'is-correct' : (i===duel.myChoice ? 'is-chosen-wrong' : 'is-dim')) : (duel.myChoice !== null ? (duel.myChoice===i ? 'is-picked' : 'is-dim') : '')]"
+                            :disabled="duel.phase!=='question' || duel.myChoice !== null" @click="duelAnswer(i)" :aria-label="shapes[i].label + ': ' + choice">
+                      <span x-html="shapeSvg(i)"></span><span x-text="choice"></span>
+                    </button>
+                  </template>
+                </div>
+                <template x-if="duel.phase==='reveal'">
+                  <div class="feedback-panel mt-4 bg-white text-slate-900 rounded-3xl p-5 shadow-xl">
+                    <div class="grid grid-cols-2 gap-2 text-sm font-bold">
+                      <div class="rounded-xl p-2" :class="duel.result.meRight ? 'bg-green-50 text-green-800' : 'bg-amber-50 text-amber-800'"
+                           x-text="'You: ' + (duel.result.meRight ? '✓ hit for ' + duel.result.mine.dmg + (duel.result.mine.crit ? ' 💥' : '') + (duel.result.mine.faster ? ' ⚡ faster!' : '') : (duel.myChoice === null ? '⏰ no answer' : '💡 not this time'))"></div>
+                      <div class="rounded-xl p-2" :class="duel.result.foeRight ? 'bg-rose-50 text-rose-800' : 'bg-slate-50 text-slate-600'"
+                           x-text="duel.foe.nickname + ': ' + (duel.result.foeRight ? '✓ hit for ' + duel.result.theirs.dmg + (duel.result.theirs.crit ? ' 💥' : '') + (duel.result.theirs.faster ? ' ⚡ faster!' : '') : '✗ missed')"></div>
+                    </div>
+                    <p class="mt-3 font-bold" x-text="'Answer: ' + duel.question.choices[duel.question.answer]"></p>
+                    <p class="text-sm text-slate-700 mt-1" x-text="'💡 ' + duel.question.explain"></p>
+                    <button x-show="duel.me.hpNow > 0 && duel.foe.hpNow > 0 && duel.round < DUEL_MAX_ROUNDS" class="btn btn-primary btn-lg btn-block mt-4 btn-3d" @click="duelNext()">Next round <i data-lucide="arrow-right" class="w-5 h-5"></i></button>
+                  </div>
+                </template>
+              </div>
+            </template>
+
+            <!-- End -->
+            <template x-if="duel.phase==='end'">
+              <div class="mt-6 bg-white text-slate-900 rounded-3xl p-6 shadow-xl text-center anim-bounce-in">
+                <p class="text-6xl" x-text="{ win: '🏆', draw: '🤝', loss: '🌱' }[duel.outcome]"></p>
+                <p class="font-display text-3xl font-bold mt-2" :class="duel.outcome==='win' ? 'text-brand' : ''"
+                   x-text="{ win: 'You won the duel!', draw: 'It’s a draw!', loss: duel.foe.nickname + ' won this time!' }[duel.outcome]"></p>
+                <p class="text-slate-600 mt-1" x-text="duel.outcome==='loss' ? 'Great effort! Every question makes you stronger. Try a rematch!' : 'Great answering, ' + duel.me.nickname + '!'"></p>
+                <p class="font-extrabold mt-3" x-text="'+' + duel.trophies + ' 🏆 trophies · +' + duel.xpGained + ' XP'"></p>
+                <!-- Loot (wins only) -->
+                <template x-if="duel.loot">
+                  <div>
+                    <p class="font-extrabold mt-5 text-sm uppercase tracking-wide text-slate-500">You won loot!</p>
+                    <div class="loot-card mx-auto mt-2" :class="RARITIES[duel.loot.rarity].cls">
+                      <p class="text-5xl" x-text="duel.loot.emoji"></p>
+                      <p class="font-display text-xl font-bold mt-1" x-text="duel.loot.name"></p>
+                      <p class="text-xs font-extrabold uppercase" x-text="RARITIES[duel.loot.rarity].name + ' ' + (duel.loot.type || SLOTS[duel.loot.slot].label)"></p>
+                      <p class="font-extrabold mt-1" x-text="itemStats(duel.loot)"></p>
+                      <p class="text-xs font-bold mt-1" x-show="!isEquipped(duel.loot)" :class="isUpgrade(duel.loot) ? 'text-green-700' : 'text-slate-500'" x-text="'vs. yours: ' + compareText(duel.loot)"></p>
+                    </div>
+                    <button x-show="!isEquipped(duel.loot)" class="btn btn-secondary btn-sm mt-3" @click="equip(duel.loot)">Equip it</button>
+                    <p x-show="isEquipped(duel.loot)" class="text-green-700 font-extrabold text-sm mt-3">✓ Equipped</p>
+                  </div>
+                </template>
+                <p x-show="duel.outcome !== 'win'" class="text-xs text-slate-500 mt-2">Win a duel to earn loot!</p>
+                <div class="grid grid-cols-2 gap-3 mt-5">
+                  <button class="btn btn-ghost" @click="exitDuel()">New opponent</button>
+                  <button class="btn btn-primary btn-3d" @click="startDuel(duel.foe.id)">Rematch</button>
+                </div>
+              </div>
+            </template>
+          </div>
         </div>
       </template>
 
@@ -1712,6 +2114,7 @@
 <script src="js/dashboard.js"></script>
 <script src="js/live.js"></script>
 <script src="js/battle.js"></script>
+<script src="js/party.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

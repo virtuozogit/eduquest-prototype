@@ -71,6 +71,13 @@ A quiz-powered RPG that uses the same questions as the quests. Open it from the 
 - **Inventory:** open it from camp (🎒 Inventory button) or after a fight. It shows your equipped gear and every item, compares each one with what you're wearing (▲/▼ ATK and CRIT), and lets you equip it.
 - **XP:** each win adds 5 + 2 × stage XP (+15 for a boss) to the student's normal level. Losing a fight keeps all gear.
 
+#### Play with classmates (see `js/party.js`)
+
+There is no server, so classmates are **simulated players** built from the 20 demo classmates. Each one's skill sets how often they answer right and how fast.
+
+- **Team Raid:** pick 3 classmates (or tap **Quick match**) and one of three raid bosses: Giant Kapre (Normal), Bakunawa (Hard), or Minokawa (Legendary). You answer questions while your teammates attack on their own. The team shares one HP bar. The boss hits everyone when its meter fills, and hits again when you answer wrong. Winning gives guaranteed **Epic or Legendary** loot, XP, and a damage ranking with an MVP.
+- **Duel:** pick a classmate (labeled Easier, Even, or Tough). You both get the same question with a 15-second timer. Each right answer attacks the other player, and the **faster** right answer does +25% damage. First to 0 HP loses, or the one with more HP left after 10 rounds wins. Every duel earns trophies and XP, even a loss (win +20, draw +10, loss +5 trophies), so students are never punished for trying. A **win also drops loot**, Rare or better when you beat a Tough opponent.
+
 ### Child safety (from our business plan)
 
 Cartoon avatars (DiceBear) and nicknames only · no ads, no purchases shown to kids · break reminder at the parent’s limit · encouraging feedback for wrong answers (soft sound, 💡 instead of ❌) · DepEd and RA 10173 notice in the footer.
@@ -89,6 +96,7 @@ js/quiz.js        challenge engine: scoring, adaptive rules, badges
 js/dashboard.js   teacher + parent data and Chart.js charts
 js/live.js        Host Live Game, bots, BroadcastChannel two-tab play
 js/battle.js      BattleQuest: monsters, weapons + loot tables, combo/critical-hit fight loop
+js/party.js       BattleQuest with classmates: Team Raid (co-op boss) and Duel (1-vs-1)
 js/app.js         Alpine app: routing (#/student, #/teacher/…), screen time, assignments, quiz builder
 ```
 
@@ -98,7 +106,7 @@ js/app.js         Alpine app: routing (#/student, #/teacher/…), screen time, a
   `Q('easy', 'Question?', ['A', 'B', 'C', 'D'], 1, 'Why B is right.')`
   The `1` is the index of the correct choice (0 = first).
 - **Change timer or points:** constants at the top of `js/quiz.js` (and `js/live.js` for live games).
-- **Change monsters, loot, or battle balance:** the lists and constants at the top of `js/battle.js`.
+- **Change monsters, loot, or battle balance:** the lists and constants at the top of `js/battle.js` (and `js/party.js` for raids and duels).
 - **Change colors:** the theme block at the top of `css/style.css`, and each subject’s `color` in `data.js`.
 
 **Libraries (all from CDNs):** Tailwind CSS (Play CDN) + DaisyUI · Alpine.js · Chart.js · canvas-confetti · Lucide icons · DiceBear avatars · Google Fonts (Fredoka, Nunito). Howler.js is not loaded because there are no audio files. Sounds are generated with the Web Audio API in `js/sound.js`. The browser console shows a “cdn.tailwindcss.com should not be used in production” warning. That is expected for a prototype.
