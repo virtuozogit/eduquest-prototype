@@ -56,7 +56,7 @@ All paths are relative, so the site works inside the `/eduquest-prototype/` subf
 
 | Role | Screens |
 |---|---|
-| **Student** (mobile-first) | Home (avatar, level, XP, streak, badges, subject cards, teacher assignments) · Quest map · Lesson · Kahoot-style challenge with instant feedback · Results (stars, XP, badges, review mistakes, class leaderboard) · Badges · Join live game · **BattleQuest** (quiz-powered RPG with an inventory) |
+| **Student** (mobile-first) | Home (avatar, level, XP, streak, badges, subject cards, teacher assignments) · Quest map · Lesson · Kahoot-style challenge with instant feedback · Results (stars, XP, badges, review mistakes, class leaderboard) · Badges · Join live game (with podium) · **BattleQuest** (quiz-powered RPG with an inventory) |
 | **Teacher** (Canvas-like) | Class dashboard (Lean Canvas key metrics, charts, sortable roster) · Mastery heatmap · Challenge library + assign with due date · Quiz builder · Host Live Game (PIN, lobby, bots, answer chart, top 5, podium) |
 | **Parent** | Weekly time chart · progress stats · subjects improving vs. needing help · recent badges · **daily screen-time limit** · download/delete child data (RA 10173) · plan info (parents only) |
 
@@ -79,7 +79,7 @@ A quiz-powered RPG that uses the same questions as the quests. Open it from the 
 - **Wrong answer → the monster hits you**, and you see the right answer and the explanation. The monster also attacks when its 15-second meter fills.
 - **Stages:** monsters from Philippine folklore (Duwende, Tikbalang, Kapre, Bakunawa…). Every 5th stage is a **boss**. Stages 1–2 use easy questions, 3–5 easy + medium, 6+ all levels. Choose all subjects or one.
 - **Loot:** every win drops a **weapon (ATK + CRIT %), shield (DEF) or armor (HP)** in Common, Rare, Epic, or Legendary. Weapons come in five types: sword, bow, spear, hammer, and staff. Weapon CRIT % by rarity: Common 3–6%, Rare 6–10%, Epic 10–15%, Legendary 15–22%. Bosses always drop Rare or better, and loot gets stronger on higher stages.
-- **Inventory:** open it from camp (🎒 Inventory button) or after a fight. It shows your equipped gear and every item, compares each one with what you're wearing (▲/▼ ATK and CRIT), and lets you equip it.
+- **Inventory:** open it from camp (🎒 Inventory button) or after a fight. Tap a **Weapon, Shield, or Armor** slot at camp (or in the inventory) to see only that kind of gear. It shows your equipped gear and every item, compares each one with what you're wearing (▲/▼ ATK and CRIT), and lets you equip it.
 - **XP:** each win adds 5 + 2 × stage XP (+15 for a boss) to the student's normal level. Losing a fight keeps all gear.
 
 #### Play with classmates (see `js/party.js`)
@@ -94,6 +94,59 @@ There is no server, so classmates are **simulated players** built from the 20 de
 Cartoon avatars (DiceBear) and nicknames only · no ads, no purchases shown to kids · break reminder at the parent’s limit · encouraging feedback for wrong answers (soft sound, 💡 instead of ❌) · DepEd and RA 10173 notice in the footer.
 
 ---
+
+## Built with (the code and tools we used)
+
+EduQuest is a **static website**: plain files that run in the browser, with **no server, no database, and no app store install**. Everything below is free.
+
+### Languages
+
+| Language | Used for |
+|---|---|
+| **HTML** | Every screen (student, teacher, parent, pop-ups), split into templates in `templates/` |
+| **CSS** | Colors, the Kahoot-style answer buttons, quest map, heatmap, BattleQuest effects, animations (`css/style.css`) |
+| **JavaScript** (plain, no framework build) | All app logic in `js/`: quizzes, scoring, adaptive difficulty, badges, BattleQuest, live games, dashboards |
+| **Python** | Only `build.py`, which joins the HTML templates into `index.html` (not needed to run the site) |
+
+### Libraries (loaded from CDNs with `<script>`/`<link>` tags, no install needed)
+
+| Library | Version | What it does in EduQuest |
+|---|---|---|
+| [Tailwind CSS](https://tailwindcss.com) (Play CDN) | 3.4.5 | Utility classes for layout, spacing, and colors |
+| [DaisyUI](https://daisyui.com) | 4.12.10 | Ready-made buttons, cards, modals, badges, and the EduQuest color theme |
+| [Alpine.js](https://alpinejs.dev) | 3.14.1 | Makes the pages interactive: app state, screens, clicks, timers |
+| [Chart.js](https://www.chartjs.org) | 4.4.4 | Teacher and parent charts (class averages, mastery levels, weekly time, live answer chart) |
+| [canvas-confetti](https://github.com/catdad/canvas-confetti) | 1.9.3 | Confetti for wins, badges, and podiums |
+| [Lucide](https://lucide.dev) | 0.460.0 | Line icons (home, badges, search, and more) |
+| [DiceBear](https://www.dicebear.com) "Big Smile" | API 9.x | Cartoon avatars made from a nickname (no real photos) |
+| [Google Fonts](https://fonts.google.com) | – | **Fredoka** (playful headings) and **Nunito** (easy-to-read text) |
+| [Jinja2](https://jinja.palletsprojects.com) | any 3.x | Template tool used by `build.py` (only for teammates who edit the HTML) |
+
+### Built-in browser features (no library needed)
+
+| Feature | What it does in EduQuest |
+|---|---|
+| **localStorage** | Saves progress, XP, badges, gear, assignments, quizzes, and settings in the browser (`js/store.js`) |
+| **Web Audio API** | Makes all sound effects as generated beeps, so there are no audio files (`js/sound.js`) |
+| **BroadcastChannel API** | Lets a second browser tab join a live game as a real player (`js/live.js`) |
+| **URL hash routing** (`#/student`, `#/teacher/…`) | Moves between screens without reloading, and works from a file or any web host |
+| **Blob downloads** | The parent's "Download data" button (RA 10173 right to access) |
+
+### How the code is organized
+
+- **One Alpine app:** `js/app.js` creates the app and merges in "mixins" (groups of features) from `quiz.js`, `dashboard.js`, `live.js`, `battle.js`, and `party.js`.
+- **All content in one file:** subjects, quests, lessons, 90 questions, badges, and the 20 practice classmates are in `js/data.js`, so non-programmers can edit them.
+- **Simulated classmates:** there is no server, so classmates in live games, raids, and duels are bots whose "skill" controls how often and how fast they answer.
+
+### Tools
+
+| Tool | Used for |
+|---|---|
+| **Git + GitHub** | Version control and teamwork (branches and pull requests) |
+| **Netlify** (or GitHub Pages) | Free hosting of the static site; no build command needed |
+| **VS Code** | Code editor |
+| **Google Chrome** | Testing, including phone-size screens |
+| **`js/testscript.js`** | 313 automatic checks; open the site with `?test=1` and look in the browser console (F12) |
 
 ## Files (for teammates)
 
@@ -129,7 +182,7 @@ js/app.js                    Alpine app: routing (#/student, #/teacher/…), scr
 - **Change monsters, loot, or battle balance:** the lists and constants at the top of `js/battle.js` (and `js/party.js` for raids and duels).
 - **Change colors:** the theme block at the top of `css/style.css`, and each subject’s `color` in `data.js`.
 
-**Libraries (all from CDNs):** Tailwind CSS (Play CDN) + DaisyUI · Alpine.js · Chart.js · canvas-confetti · Lucide icons · DiceBear avatars · Google Fonts (Fredoka, Nunito). Howler.js is not loaded because there are no audio files. Sounds are generated with the Web Audio API in `js/sound.js`. The browser console shows a “cdn.tailwindcss.com should not be used in production” warning. That is expected for a prototype.
+**Libraries:** see **Built with** above. The browser console shows a “cdn.tailwindcss.com should not be used in production” warning. That is expected for a prototype. Howler.js is not loaded because there are no audio files.
 
 **Saved data:** everything is stored in the browser’s `localStorage` under keys starting with `eduquest.v1.`. Click **Reset demo** (footer, teacher sidebar, or Parent → Delete data) to restore the starting demo.
 

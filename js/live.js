@@ -16,11 +16,13 @@
 const LIVE_TIME = 20;        // seconds per question
 const LIVE_QUESTIONS = 5;    // questions per live game
 const LIVE_BOTS = 8;         // bot players that join the lobby
+const LIVE_REVEAL_SECONDS = 8; // after each reveal, auto-move to the next question (or podium)
 const CHANNEL_NAME = 'eduquest-live';
 
 // Non-reactive handles (timers + channels)
 let liveTimers = [];
 let liveTick = null;
+let liveAutoNext = null;     // countdown on the reveal screen
 let liveChannel = null;
 let liveQuestionStart = 0;
 let playerChannel = null;
@@ -31,7 +33,8 @@ function liveMixin() {
     live: {
       phase: 'setup', sourceId: 'math-1', pin: '', title: '',
       players: [], questions: [], index: 0, timeLeft: LIVE_TIME,
-      answers: {}, counts: [0, 0, 0, 0]
+      answers: {}, counts: [0, 0, 0, 0],
+      nextIn: 0, autoPaused: false   // reveal-screen countdown
     },
 
     liveSupported() { return 'BroadcastChannel' in window; },
@@ -180,6 +183,25 @@ function liveMixin() {
       ranked.forEach((p, i) => { if (!p.isBot) results[p.id] = { correct: p.lastCorrect, points: p.lastPoints, score: p.score, rank: i + 1, streak: p.streak }; });
       this.liveSend({ type: 'reveal', index: live.index, correct: q.answer, correctText: q.choices[q.answer], explain: q.explain, results, players: ranked.length });
       this.$nextTick(() => this.liveDrawChart());
+      this.liveStartAutoNext();
+    },
+
+    // Count down on the reveal screen, then go to the next question (or the
+    // podium after the last one). The teacher can pause it or skip ahead.
+    liveStartAutoNext() {
+      clearInterval(liveAutoNext);
+      Object.assign(this.live, { nextIn: LIVE_REVEAL_SECONDS, autoPaused: false });
+      liveAutoNext = setInterval(() => {
+        if (this.live.phase !== 'reveal') { clearInterval(liveAutoNext); liveAutoNext = null; return; }
+        if (this.live.autoPaused) return;
+        this.live.nextIn--;
+        if (this.live.nextIn <= 0) this.liveNext();
+      }, 1000);
+    },
+
+    liveToggleAutoNext() {
+      this.live.autoPaused = !this.live.autoPaused;
+      Sound.click();
     },
 
     liveDrawChart() {
@@ -216,7 +238,9 @@ function liveMixin() {
       const ranked = this.liveRanked();
       const results = {};
       ranked.forEach((p, i) => { if (!p.isBot) results[p.id] = { rank: i + 1, score: p.score }; });
-      this.liveSend({ type: 'end', results, podium: ranked.slice(0, 3).map(p => p.nickname), players: ranked.length });
+      // Send the top 3 (name, avatar, score) so student tabs can show the podium too
+      const podium = ranked.slice(0, 3).map(p => ({ id: p.id, nickname: p.nickname, avatar: p.avatar, score: p.score }));
+      this.liveSend({ type: 'end', results, podium, players: ranked.length });
       setTimeout(() => { Sound.fanfare(); Celebrate.big(); }, 400);
     },
 
@@ -231,6 +255,8 @@ function liveMixin() {
       liveTimers = [];
       clearInterval(liveTick);
       liveTick = null;
+      clearInterval(liveAutoNext);
+      liveAutoNext = null;
     },
 
     // Called when the teacher leaves the Host screen or clicks "End game"

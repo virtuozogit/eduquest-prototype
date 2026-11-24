@@ -487,7 +487,15 @@
                     </ol>
                   </div>
                 </div>
-                <div class="flex justify-end">
+                <!-- Auto-advance countdown (LIVE_REVEAL_SECONDS in live.js); Pause stops it -->
+                <div class="flex flex-wrap items-center justify-end gap-3">
+                  <div class="flex items-center gap-2 mr-auto sm:mr-0">
+                    <div class="radial-progress text-brand text-sm font-extrabold" role="progressbar"
+                         :style="`--value:${live.nextIn / LIVE_REVEAL_SECONDS * 100}; --size:2.75rem; --thickness:4px`" x-text="live.nextIn"></div>
+                    <p class="text-sm font-bold text-slate-600"
+                       x-text="live.autoPaused ? 'Paused' : (live.index + 1 < live.questions.length ? 'Next question in ' : 'Podium in ') + live.nextIn + 's'"></p>
+                    <button class="btn btn-ghost btn-sm" @click="liveToggleAutoNext()" x-text="live.autoPaused ? '▶ Resume' : '⏸ Pause'"></button>
+                  </div>
                   <button class="btn btn-primary btn-lg btn-3d" @click="liveNext()">
                     <span x-text="live.index + 1 < live.questions.length ? 'Next question' : 'Show podium 🏆'"></span><i data-lucide="arrow-right" class="w-5 h-5"></i>
                   </button>

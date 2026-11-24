@@ -294,16 +294,18 @@
               <div class="bg-white/15 rounded-2xl py-2"><p class="text-xl">❤️</p><p class="font-extrabold text-sm" x-text="heroMaxHp() + ' HP'"></p></div>
             </div>
             <div class="grid grid-cols-3 gap-2 mt-2">
+              <!-- Tap a slot → Inventory filtered to that kind of gear -->
               <template x-for="slot in ['weapon','shield','armor']" :key="slot">
-                <div class="bg-white/10 rounded-2xl p-2 text-center">
+                <button class="bg-white/10 hover:bg-white/20 rounded-2xl p-2 text-center transition" @click="openInventory(slot)" :aria-label="'See all ' + SLOTS[slot].label.toLowerCase() + 's in your inventory'">
                   <p class="text-[11px] font-extrabold uppercase tracking-wide text-white/80" x-text="SLOTS[slot].label"></p>
                   <p class="text-2xl" x-text="equippedItem(slot)?.emoji || '▫️'"></p>
                   <p class="text-[11px] font-extrabold leading-tight" x-text="equippedItem(slot)?.name || 'No ' + SLOTS[slot].label.toLowerCase()"></p>
                   <p class="text-[10px] font-bold text-white/70 mt-0.5" x-text="'Boosts ' + SLOTS[slot].stat + (slot === 'weapon' ? ' + CRIT' : '')"></p>
-                </div>
+                  <p class="text-[10px] font-extrabold text-sun mt-0.5">Tap to swap ›</p>
+                </button>
               </template>
             </div>
-            <a href="#/student/battle/bag" class="btn btn-block mt-3 bg-white/15 border-0 text-white hover:bg-white/25 gap-2" @click="Sound.click()">
+            <a href="#/student/battle/bag" class="btn btn-block mt-3 bg-white/15 border-0 text-white hover:bg-white/25 gap-2" @click.prevent="openInventory('all')">
               🎒 Inventory
             </a>
           </section>
@@ -390,21 +392,24 @@
           <section>
             <h2 class="font-display text-xl font-bold mb-2">Equipped</h2>
             <div class="grid grid-cols-3 gap-3">
+              <!-- Tap an equipped card → filter "All items" to that slot -->
               <template x-for="slot in ['weapon','shield','armor']" :key="slot">
-                <div class="loot-card" :class="equippedItem(slot) ? RARITIES[equippedItem(slot).rarity].cls : 'rarity-common opacity-60'">
+                <button class="loot-card w-full transition" :class="[equippedItem(slot) ? RARITIES[equippedItem(slot).rarity].cls : 'rarity-common opacity-60', lootFilter===slot && 'ring-4 ring-brand ring-offset-2']"
+                        @click="filterInventory(slot)" :aria-label="'Show ' + SLOTS[slot].label.toLowerCase() + 's'">
                   <p class="text-[11px] font-extrabold uppercase text-slate-500" x-text="SLOTS[slot].label"></p>
                   <p class="text-3xl mt-1" x-text="equippedItem(slot)?.emoji || '▫️'"></p>
                   <p class="font-display font-bold leading-tight text-sm mt-1" x-text="equippedItem(slot)?.name || 'Empty'"></p>
                   <p class="text-xs font-extrabold mt-1" x-show="equippedItem(slot)" x-text="equippedItem(slot) ? itemStats(equippedItem(slot)) : ''"></p>
-                </div>
+                </button>
               </template>
             </div>
           </section>
 
-          <!-- All items -->
-          <section>
+          <!-- All items (scrolled into view when opened from a camp gear slot) -->
+          <section id="inv-items" class="scroll-mt-20"
+                   x-init="if (scrollToItems) { scrollToItems = false; setTimeout(() => $el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80); }">
             <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
-              <h2 class="font-display text-xl font-bold">All items</h2>
+              <h2 class="font-display text-xl font-bold" x-text="lootFilter === 'all' ? 'All items' : SLOTS[lootFilter].label + 's'"></h2>
               <div class="flex flex-wrap gap-1">
                 <template x-for="f in ['all','weapon','shield','armor']" :key="f">
                   <button class="btn btn-xs rounded-full" :class="lootFilter===f ? 'btn-primary' : 'btn-ghost bg-white'" @click="lootFilter=f" x-text="f==='all' ? 'All' : SLOTS[f].emoji + ' ' + SLOTS[f].label + 's'"></button>
@@ -1253,11 +1258,26 @@
 
           <!-- End -->
           <template x-if="player.phase==='end'">
-            <div class="mt-6 text-center bg-white rounded-3xl p-6 shadow-sm">
-              <p class="text-6xl" x-text="player.final.rank <= 3 ? ['🥇','🥈','🥉'][player.final.rank - 1] : '🎮'"></p>
-              <h2 class="font-display text-3xl font-bold mt-2" x-text="'You finished #' + player.final.rank + ' of ' + player.final.players + '!'"></h2>
-              <p class="font-bold mt-1" x-text="fmt(player.final.score) + ' points'"></p>
-              <p class="text-sm text-slate-600 mt-3" x-text="'Podium: ' + player.final.podium.join(' · ')"></p>
+            <div class="mt-4 text-center bg-white rounded-3xl p-5 shadow-sm">
+              <h2 class="font-display text-2xl font-bold">🏆 Podium</h2>
+              <!-- Podium: 2nd · 1st · 3rd (same layout as the teacher's screen). You are highlighted. -->
+              <div class="flex items-end justify-center gap-2 mt-4">
+                <template x-for="slot in [{rank:2, h:'h-20', bg:'bg-slate-300'}, {rank:1, h:'h-28', bg:'bg-sun'}, {rank:3, h:'h-14', bg:'bg-orange-300'}]" :key="slot.rank">
+                  <div class="flex flex-col items-center w-24" x-show="player.final.podium[slot.rank - 1]">
+                    <img :src="avatarUrl(player.final.podium[slot.rank - 1]?.avatar)" class="w-14 h-14 rounded-full bg-slate-100 shadow anim-bounce-in"
+                         :class="player.final.podium[slot.rank - 1]?.id === player.id && 'ring-4 ring-brand'" :style="`animation-delay:${(4 - slot.rank) * 0.3}s`" alt="">
+                    <p class="text-sm font-bold mt-1 truncate w-full" :class="player.final.podium[slot.rank - 1]?.id === player.id && 'text-brand'"
+                       x-text="player.final.podium[slot.rank - 1]?.id === player.id ? 'You!' : player.final.podium[slot.rank - 1]?.nickname"></p>
+                    <p class="text-xs font-bold text-slate-600" x-text="fmt(player.final.podium[slot.rank - 1]?.score) + ' pts'"></p>
+                    <div class="w-full rounded-t-2xl mt-1 grid place-items-center font-display text-3xl font-bold text-slate-800" :class="[slot.h, slot.bg]" x-text="slot.rank"></div>
+                  </div>
+                </template>
+              </div>
+              <div class="border-t border-slate-100 mt-0 pt-4">
+                <p class="text-4xl" x-text="player.final.rank <= 3 ? ['🥇','🥈','🥉'][player.final.rank - 1] : '🎮'"></p>
+                <p class="font-display text-2xl font-bold mt-1" x-text="'You finished #' + player.final.rank + ' of ' + player.final.players + '!'"></p>
+                <p class="font-bold mt-1" x-text="fmt(player.final.score) + ' points' + (player.final.rank > 3 ? ' · Great effort — keep practicing!' : '')"></p>
+              </div>
               <a href="#/student" class="btn btn-primary mt-5" @click="playerLeave()">Back home</a>
             </div>
           </template>

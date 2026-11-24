@@ -150,6 +150,7 @@ function battleMixin() {
     battleSubject: 'all',
     fight: null,      // the fight in progress (null or phase 'done' = at camp)
     lootFilter: 'all',
+    scrollToItems: false,   // set by openInventory(slot): scroll to "All items" when the inventory opens
 
     saveHero() { Store.set('battle', this.hero); },
 
@@ -187,6 +188,21 @@ function battleMixin() {
       if (item.slot !== 'weapon') return d > 0;
       const c = this.critDiff(item);
       return d >= 0 && c >= 0 && (d > 0 || c > 0);
+    },
+
+    // Open the inventory with "All items" filtered to one slot ('all' = no
+    // filter). Tapping a gear slot jumps down to the matching items.
+    openInventory(filter = 'all') {
+      Sound.click();
+      this.lootFilter = filter;
+      this.scrollToItems = filter !== 'all';
+      this.go('#/student/battle/bag');
+    },
+    // Inside the inventory: tap an Equipped card to filter the list
+    filterInventory(slot) {
+      Sound.click();
+      this.lootFilter = slot;
+      document.getElementById('inv-items')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     },
 
     // Open the inventory (also from the victory/defeat screen)
