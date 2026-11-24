@@ -34,6 +34,58 @@ function baseBarOptions(extra = {}) {
   };
 }
 
+/* Value labels: a tiny Chart.js plugin that writes each value ON the chart
+   so it can be read at a glance (no extra library).
+   Add `plugins: [ValueLabels]` to a chart config, then set options in
+   options.plugins.valueLabels:
+     format(value, total, index) → text to draw ('' = skip)
+     colors: [..]  text color per slice (doughnut only; bars use dark ink)
+     minShare: 0.06 → skip doughnut slices smaller than 6%
+     center: { big, small } → text in the middle of a doughnut          */
+const ValueLabels = {
+  id: 'valueLabels',
+  afterDatasetsDraw(chart, args, opts) {
+    const ds = chart.data.datasets[0];
+    const meta = chart.getDatasetMeta(0);
+    if (!ds || !meta) return;
+    const { ctx } = chart;
+    const total = ds.data.reduce((s, v) => s + (Number(v) || 0), 0);
+    const isRing = chart.config.type === 'doughnut';
+    ctx.save();
+    ctx.textAlign = 'center';
+    meta.data.forEach((el, i) => {
+      const v = ds.data[i];
+      if (v == null) return;
+      if (isRing && (!total || v / total < (opts.minShare ?? 0.06))) return;
+      const text = opts.format ? opts.format(v, total, i) : String(v);
+      if (!text) return;
+      ctx.font = '800 13px Nunito, sans-serif';
+      if (isRing) {
+        const p = el.tooltipPosition();
+        ctx.fillStyle = (opts.colors && opts.colors[i]) || '#fff';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, p.x, p.y);
+      } else {
+        ctx.fillStyle = '#1E293B';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(text, el.x, el.y - 4);
+      }
+    });
+    if (isRing && opts.center) {
+      const a = chart.chartArea;
+      const cx = (a.left + a.right) / 2, cy = (a.top + a.bottom) / 2;
+      ctx.fillStyle = '#1E293B';
+      ctx.textBaseline = 'middle';
+      ctx.font = '700 26px Fredoka, Nunito, sans-serif';
+      ctx.fillText(opts.center.big, cx, cy - 8);
+      ctx.fillStyle = '#64748B';
+      ctx.font = '700 12px Nunito, sans-serif';
+      ctx.fillText(opts.center.small, cx, cy + 15);
+    }
+    ctx.restore();
+  }
+};
+
 // Mastery bands used by the heatmap, roster, and parent view
 const MASTERY = {
   band(v) {
@@ -150,27 +202,39 @@ function dashboardMixin() {
             borderRadius: 4, borderSkipped: 'start', maxBarThickness: 56
           }]
         },
+        plugins: [ValueLabels],
         options: baseBarOptions({
+          layout: { padding: { top: 22 } },   // room for the % above a full bar
           scales: {
             x: { grid: { display: false }, ticks: { color: CHART_INK, font: { family: 'Nunito', weight: '700' } } },
             y: { min: 0, max: 100, grid: { color: CHART_GRID }, border: { display: false }, ticks: { color: CHART_INK, callback: v => v + '%' } }
           },
-          plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' Class average: ' + c.raw + '%' } } }
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: c => ' Class average: ' + c.raw + '%' } },
+            valueLabels: { format: v => v + '%' }
+          }
         })
       });
 
       this.drawMasteryChart();
     },
 
-    // How many student × competency results fall into each mastery band,
-    // for all subjects or just one (masterySubject)
+    // How many QUEST RESULTS fall into each mastery band, for all subjects or
+    // just one (masterySubject). One result = one student's best score on one
+    // quest, so the totals are bigger than the number of students.
+    // Also returns: total results, and how many students have any result.
     masteryCounts() {
-      const counts = { high: 0, mid: 0, low: 0 };
+      const counts = { high: 0, mid: 0, low: 0, total: 0, students: 0 };
       const quests = this.allQuests().filter(q => this.masterySubject === 'all' || q.subjectId === this.masterySubject);
-      this.classRoster().forEach(st => quests.forEach(q => {
-        const b = MASTERY.band(st.mastery[q.id]);
-        if (b !== 'none') counts[b]++;
-      }));
+      this.classRoster().forEach(st => {
+        let tried = false;
+        quests.forEach(q => {
+          const b = MASTERY.band(st.mastery[q.id]);
+          if (b !== 'none') { counts[b]++; counts.total++; tried = true; }
+        });
+        if (tried) counts.students++;
+      });
       return counts;
     },
 
@@ -181,15 +245,28 @@ function dashboardMixin() {
 
     drawMasteryChart() {
       const counts = this.masteryCounts();
+      const total = counts.total;
       drawChart('chart-mastery', {
         type: 'doughnut',
         data: {
           labels: ['Mastered (80%+)', 'Developing (50–79%)', 'Needs help (<50%)'],
           datasets: [{ data: [counts.high, counts.mid, counts.low], backgroundColor: ['#16A34A', '#F59E0B', '#E11D48'], borderColor: '#fff', borderWidth: 2 }]
         },
+        plugins: [ValueLabels],
         options: {
-          responsive: true, maintainAspectRatio: false, cutout: '62%',
-          plugins: { legend: { position: 'bottom', labels: { color: CHART_INK, boxWidth: 12, font: { family: 'Nunito' } } } }
+          responsive: true, maintainAspectRatio: false, cutout: '58%',
+          plugins: {
+            // The colored breakdown list under the chart (teacher.html) is the legend
+            legend: { display: false },
+            tooltip: { callbacks: { label: c => ' ' + c.raw + ' results' } },
+            // % of results inside each slice (dark text on amber for contrast),
+            // and the share that is Mastered in the middle
+            valueLabels: {
+              format: (v, total) => Math.round((100 * v) / total) + '%',
+              colors: ['#FFFFFF', '#3B2A00', '#FFFFFF'],
+              center: { big: total ? Math.round((100 * counts.high) / total) + '%' : '–', small: 'mastered' }
+            }
+          }
         }
       });
     },
@@ -239,10 +316,13 @@ function dashboardMixin() {
             borderRadius: 4, borderSkipped: 'start', maxBarThickness: 36
           }]
         },
+        plugins: [ValueLabels],
         options: baseBarOptions({
+          layout: { padding: { top: 22 } },
           plugins: {
             legend: { display: false },
-            tooltip: { callbacks: { label: c => ' ' + c.raw + ' min' + (limit ? ' (limit ' + limit + ' min)' : '') } }
+            tooltip: { callbacks: { label: c => ' ' + c.raw + ' min' + (limit ? ' (limit ' + limit + ' min)' : '') } },
+            valueLabels: { format: v => v + 'm' }
           },
           scales: {
             x: { grid: { display: false }, ticks: { color: CHART_INK, font: { family: 'Nunito', weight: '700' } } },

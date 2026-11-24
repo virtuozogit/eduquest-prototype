@@ -80,7 +80,7 @@
               </div>
               <div class="bg-white rounded-2xl p-4 border border-slate-200">
                 <h2 class="font-bold">Mastery levels</h2>
-                <p class="text-xs text-slate-500" x-text="'Student × competency results · ' + (masterySubject === 'all' ? 'all subjects' : subject(masterySubject).name)"></p>
+                <p class="text-xs text-slate-500" x-text="'Every quest result in the class · ' + (masterySubject === 'all' ? 'all subjects' : subject(masterySubject).name)"></p>
                 <!-- Subject filter (redraws the chart) -->
                 <div class="flex flex-wrap gap-1 mt-2">
                   <template x-for="f in [{id:'all', label:'All'}, ...data.subjects.map(s => ({id:s.id, label:s.emoji + ' ' + s.name}))]" :key="f.id">
@@ -88,8 +88,16 @@
                   </template>
                 </div>
                 <div class="h-56 mt-3"><canvas id="chart-mastery" role="img" aria-label="Doughnut chart of mastery levels"></canvas></div>
-                <p class="text-xs text-slate-600 font-bold text-center mt-2"
-                   x-text="'Mastered ' + masteryCounts().high + ' · Developing ' + masteryCounts().mid + ' · Needs help ' + masteryCounts().low"></p>
+                <!-- Counts are QUEST RESULTS (one student's best score on one quest), not students -->
+                <div class="mt-3 rounded-xl bg-slate-50 p-3 text-sm" x-data="{ get c() { return masteryCounts(); } }">
+                  <p class="font-bold text-slate-700" x-text="c.total + ' quest results from ' + c.students + ' students'"></p>
+                  <ul class="mt-1.5 space-y-1">
+                    <li class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-[#16A34A]"></span><span class="flex-1">Mastered (80%+)</span><b x-text="c.high + ' results'"></b></li>
+                    <li class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-[#F59E0B]"></span><span class="flex-1">Developing (50–79%)</span><b x-text="c.mid + ' results'"></b></li>
+                    <li class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-[#E11D48]"></span><span class="flex-1">Needs help (&lt;50%)</span><b x-text="c.low + ' results'"></b></li>
+                  </ul>
+                  <p class="text-xs text-slate-500 mt-2">1 result = one student’s best score on one quest. A student who tried 4 quests adds 4 results.</p>
+                </div>
               </div>
             </div>
 

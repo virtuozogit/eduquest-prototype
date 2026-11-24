@@ -213,8 +213,14 @@ function liveMixin() {
           labels: q.choices.map((c, i) => (i === q.answer ? '✓ ' : '') + this.shapes[i].label),
           datasets: [{ label: 'Players', data: this.live.counts.slice(), backgroundColor: colors, borderRadius: 4, borderSkipped: 'start', maxBarThickness: 64 }]
         },
+        plugins: [ValueLabels],   // player count above each bar (see dashboard.js)
         options: baseBarOptions({
-          plugins: { legend: { display: false }, tooltip: { callbacks: { title: items => q.choices[items[0].dataIndex], label: c => ' ' + c.raw + ' player' + (c.raw === 1 ? '' : 's') } } },
+          layout: { padding: { top: 22 } },
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { title: items => q.choices[items[0].dataIndex], label: c => ' ' + c.raw + ' player' + (c.raw === 1 ? '' : 's') } },
+            valueLabels: { format: v => String(v) }
+          },
           scales: {
             x: { grid: { display: false }, ticks: { color: CHART_INK, font: { family: 'Nunito', weight: '700' } } },
             y: { beginAtZero: true, grid: { color: CHART_GRID }, border: { display: false }, ticks: { color: CHART_INK, precision: 0 } }

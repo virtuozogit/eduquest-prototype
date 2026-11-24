@@ -49,8 +49,98 @@
         <p class="text-sm text-slate-600 mt-2">Grade 4 prototype · Mathematics · Science · English · DepEd MATATAG-aligned sample content</p>
       </div>
 
+      <!-- ===== Login / Register ===== -->
+      <div class="auth-card max-w-md mx-auto mt-8">
+        <!-- Logged in -->
+        <template x-if="account">
+          <div class="text-center">
+            <img :src="avatarUrl(account.avatar)" class="w-20 h-20 mx-auto rounded-full bg-slate-100 border-4 border-white shadow" alt="">
+            <p class="text-sm font-bold text-slate-500 mt-3">Logged in as</p>
+            <h2 class="font-display text-3xl font-bold" x-text="account.username"></h2>
+            <span class="badge badge-lg mt-2 font-bold capitalize gap-1" x-text="account.role"></span>
+            <button class="btn btn-primary btn-3d btn-block mt-5 text-lg" @click="Sound.go(); go('#/' + account.role)">
+              Continue <i data-lucide="arrow-right" class="w-5 h-5"></i>
+            </button>
+            <button class="btn btn-ghost btn-sm mt-2" @click="logout()"><i data-lucide="log-out" class="w-4 h-4"></i> Log out</button>
+          </div>
+        </template>
+
+        <!-- Logged out -->
+        <template x-if="!account">
+          <div>
+            <div class="auth-tabs" role="tablist">
+              <button role="tab" :aria-selected="authTab==='login'" :class="authTab==='login' && 'is-active'" @click="setAuthTab('login')">Log in</button>
+              <button role="tab" :aria-selected="authTab==='register'" :class="authTab==='register' && 'is-active'" @click="setAuthTab('register')">Register</button>
+            </div>
+
+            <form class="mt-5 space-y-3" @submit.prevent="authTab==='login' ? login() : register()" novalidate>
+              <!-- Register: pick a role -->
+              <template x-if="authTab==='register'">
+                <div>
+                  <span class="label-text font-bold">I am a…</span>
+                  <div class="grid grid-cols-3 gap-2 mt-1">
+                    <template x-for="r in authRoles" :key="r.id">
+                      <button type="button" class="auth-role" :class="authForm.role===r.id && 'is-active'" @click="authForm.role = r.id; Sound.click()">
+                        <span x-html="icon(r.icon, 'w-6 h-6')"></span>
+                        <span x-text="r.label"></span>
+                      </button>
+                    </template>
+                  </div>
+                </div>
+              </template>
+
+              <label class="form-control">
+                <span class="label-text font-bold mb-1" x-text="authTab==='register' && authForm.role==='student' ? 'Nickname (username)' : 'Username'"></span>
+                <input x-model="authForm.username" @input="authError=''" maxlength="12" autocomplete="username" class="input input-bordered" placeholder="e.g. StarKiko">
+              </label>
+              <label class="form-control">
+                <span class="label-text font-bold mb-1">Password</span>
+                <div class="relative">
+                  <input x-model="authForm.password" @input="authError=''" :type="showPassword ? 'text' : 'password'" :autocomplete="authTab==='login' ? 'current-password' : 'new-password'" class="input input-bordered w-full pr-12">
+                  <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs" @click="showPassword=!showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'">
+                    <span x-html="icon(showPassword ? 'eye-off' : 'eye', 'w-4 h-4')"></span>
+                  </button>
+                </div>
+              </label>
+
+              <template x-if="authTab==='register'">
+                <div class="space-y-3">
+                  <label class="form-control">
+                    <span class="label-text font-bold mb-1">Confirm password</span>
+                    <input x-model="authForm.confirm" @input="authError=''" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" class="input input-bordered">
+                  </label>
+                  <div>
+                    <span class="label-text font-bold">Pick an avatar</span>
+                    <div class="grid grid-cols-8 gap-1 mt-1">
+                      <template x-for="seed in data.avatarSeeds" :key="seed">
+                        <button type="button" @click="authForm.avatar = seed; Sound.click()" class="rounded-full p-0.5 border-[3px]" :class="authForm.avatar===seed ? 'border-brand' : 'border-transparent'" :aria-label="'Avatar ' + seed">
+                          <img :src="avatarUrl(seed)" class="w-full aspect-square rounded-full bg-slate-100" alt="">
+                        </button>
+                      </template>
+                    </div>
+                  </div>
+                  <p class="text-xs text-slate-500">🛡️ Use a fun nickname — never your full real name.</p>
+                </div>
+              </template>
+
+              <p x-show="authError" x-text="authError" class="text-sm font-bold text-error" role="alert"></p>
+
+              <button type="submit" class="btn btn-primary btn-3d btn-block text-lg" x-text="authTab==='login' ? 'Log in' : 'Create account'"></button>
+              <p class="text-center text-sm text-slate-600">
+                <span x-text="authTab==='login' ? 'New to EduQuest?' : 'Already have an account?'"></span>
+                <button type="button" class="link link-primary font-bold" @click="setAuthTab(authTab==='login' ? 'register' : 'login')" x-text="authTab==='login' ? 'Register' : 'Log in'"></button>
+              </p>
+            </form>
+          </div>
+        </template>
+      </div>
+      <p class="text-center text-xs text-slate-500 mt-3">Prototype: accounts are saved only in this browser — nothing is sent to a server.</p>
+
+      <div class="flex items-center gap-3 mt-10 text-slate-500 font-bold text-sm">
+        <span class="flex-1 h-px bg-slate-300"></span>or explore the demo without an account<span class="flex-1 h-px bg-slate-300"></span>
+      </div>
       <h2 class="sr-only">Choose your role</h2>
-      <div class="grid sm:grid-cols-3 gap-4 mt-10">
+      <div class="grid sm:grid-cols-3 gap-4 mt-6">
         <a href="#/student" class="role-card bg-gradient-to-br from-[#5B3FD9] to-[#7C5CFF]" @click="Sound.click()">
           <span class="bg-white/20 rounded-2xl p-3"><i data-lucide="gamepad-2" class="w-8 h-8"></i></span>
           <span class="font-display text-2xl font-bold">I’m a Student</span>
@@ -1106,10 +1196,19 @@
             </div>
           </div>
 
-          <div class="quest-map mt-4">
+          <div class="quest-world mt-4" :class="'theme-' + s.id" :style="`--node:${s.color}`">
+          <!-- Candy-world scenery (decorative only) -->
+          <div class="quest-decor" aria-hidden="true">
+            <template x-for="(d, k) in mapDecor(s)" :key="k">
+              <span :style="`left:${d.x}%; top:${d.y}px; font-size:${d.size}rem; animation-delay:${d.delay}s; --tilt:${d.tilt}deg`" x-text="d.e"></span>
+            </template>
+          </div>
+          <div class="quest-map">
             <!-- .camel keeps the capital B: HTML would otherwise lowercase "viewBox" -->
             <svg class="path" x-bind:view-box.camel="`0 0 100 ${(s.quests.length + 1) * 112}`" preserveAspectRatio="none" :style="`height:${(s.quests.length + 1) * 112}px`" aria-hidden="true">
-              <path :d="questPath(s.quests.length)" fill="none" stroke="#C4B8F5" stroke-width="5" stroke-dasharray="2 12" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+              <path class="road-edge" :d="questPath(s.quests.length)" fill="none" stroke-width="30" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+              <path class="road" :d="questPath(s.quests.length)" fill="none" stroke-width="22" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+              <path class="road-candy" :d="questPath(s.quests.length)" fill="none" stroke-width="8" stroke-dasharray="1 16" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
             </svg>
             <template x-for="(q, i) in s.quests" :key="q.id">
               <div class="quest-step" :class="i % 2 ? 'quest-right' : 'quest-left'">
@@ -1130,7 +1229,8 @@
             <div class="quest-step">
               <div class="quest-node quest-trophy" :class="!hasBadge(s.id + '-star') && 'opacity-50'"><i data-lucide="trophy" class="w-9 h-9"></i></div>
             </div>
-            <p class="text-center text-sm font-bold text-slate-600 -mt-2" x-text="hasBadge(s.id + '-star') ? '🏆 ' + s.name + ' Star badge earned!' : 'Finish every quest to earn the ' + s.name + ' Star badge!'"></p>
+            <p class="quest-goal" x-text="hasBadge(s.id + '-star') ? '🏆 ' + s.name + ' Star badge earned!' : 'Finish every quest to earn the ' + s.name + ' Star badge!'"></p>
+          </div>
           </div>
         </div>
       </template>
@@ -1487,7 +1587,7 @@
               </div>
               <div class="bg-white rounded-2xl p-4 border border-slate-200">
                 <h2 class="font-bold">Mastery levels</h2>
-                <p class="text-xs text-slate-500" x-text="'Student × competency results · ' + (masterySubject === 'all' ? 'all subjects' : subject(masterySubject).name)"></p>
+                <p class="text-xs text-slate-500" x-text="'Every quest result in the class · ' + (masterySubject === 'all' ? 'all subjects' : subject(masterySubject).name)"></p>
                 <!-- Subject filter (redraws the chart) -->
                 <div class="flex flex-wrap gap-1 mt-2">
                   <template x-for="f in [{id:'all', label:'All'}, ...data.subjects.map(s => ({id:s.id, label:s.emoji + ' ' + s.name}))]" :key="f.id">
@@ -1495,8 +1595,16 @@
                   </template>
                 </div>
                 <div class="h-56 mt-3"><canvas id="chart-mastery" role="img" aria-label="Doughnut chart of mastery levels"></canvas></div>
-                <p class="text-xs text-slate-600 font-bold text-center mt-2"
-                   x-text="'Mastered ' + masteryCounts().high + ' · Developing ' + masteryCounts().mid + ' · Needs help ' + masteryCounts().low"></p>
+                <!-- Counts are QUEST RESULTS (one student's best score on one quest), not students -->
+                <div class="mt-3 rounded-xl bg-slate-50 p-3 text-sm" x-data="{ get c() { return masteryCounts(); } }">
+                  <p class="font-bold text-slate-700" x-text="c.total + ' quest results from ' + c.students + ' students'"></p>
+                  <ul class="mt-1.5 space-y-1">
+                    <li class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-[#16A34A]"></span><span class="flex-1">Mastered (80%+)</span><b x-text="c.high + ' results'"></b></li>
+                    <li class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-[#F59E0B]"></span><span class="flex-1">Developing (50–79%)</span><b x-text="c.mid + ' results'"></b></li>
+                    <li class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-[#E11D48]"></span><span class="flex-1">Needs help (&lt;50%)</span><b x-text="c.low + ' results'"></b></li>
+                  </ul>
+                  <p class="text-xs text-slate-500 mt-2">1 result = one student’s best score on one quest. A student who tried 4 quests adds 4 results.</p>
+                </div>
               </div>
             </div>
 

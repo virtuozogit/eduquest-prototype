@@ -54,7 +54,15 @@ function app() {
     previewQuiz: null,
     assignDraft: null,     // { quizId, title, due }
     builder: null,
-    
+
+    // ---- Login / Register (demo accounts, saved only in this browser) ----
+    accounts: Store.get('accounts', []),
+    session: Store.get('session', null),   // { username } or null
+    authTab: 'login',                      // 'login' | 'register'
+    authForm: { username: '', password: '', confirm: '', role: 'student', avatar: 'Kiko' },
+    authError: '',
+    showPassword: false,
+
 
     init() {
       Sound.setEnabled(this.settings.sound);
@@ -156,6 +164,32 @@ function app() {
         d += ` C ${x(i)} ${y1 + step / 2}, ${x(i + 1)} ${y2 - step / 2}, ${x(i + 1)} ${y2}`;
       }
       return d;
+    },
+
+    // Candy-world scenery for each subject's quest map. Emoji float along
+    // the left/right edges of the map so they stay behind the quest nodes.
+    mapThemes: {
+      math:    ['☁️', '🔢', '➕', '✖️', '📐', '🧮', '🎈', '⭐', '➗', '🍬'],
+      science: ['🌿', '🍄', '🦋', '🪐', '🔭', '🌱', '🐞', '🌳', '⚗️', '🌻'],
+      english: ['📖', '✏️', '🔤', '🍭', '🌸', '📝', '💬', '🎀', '🧁', '🍩']
+    },
+    mapDecor(s) {
+      const set = this.mapThemes[s.id] || ['⭐', '🍬', '🍭', '☁️', '🎈'];
+      const steps = s.quests.length + 1, out = [];
+      let seed = s.id.split('').reduce((a, c) => a + c.charCodeAt(0), 7);
+      const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+      for (let i = 0; i < steps * 2; i++) {
+        const left = i % 2 === 0;
+        out.push({
+          e: set[Math.floor(rnd() * set.length)],
+          x: left ? 1 + rnd() * 7 : 88 + rnd() * 7,
+          y: 20 + i * 56 + rnd() * 30,
+          size: 1.4 + rnd() * 1.1,
+          delay: (rnd() * 3).toFixed(2),
+          tilt: Math.round(rnd() * 30 - 15)
+        });
+      }
+      return out;
     },
 
     teacherNav: [
@@ -349,6 +383,69 @@ function app() {
       this.saveStudent();
       this.showAvatarModal = false;
       Sound.pop();
+    },
+
+    /* ===================== LOGIN / REGISTER ========================= */
+    // Prototype only: accounts live in this browser's localStorage and the
+    // password is scrambled with a simple hash. A real launch needs a server
+    // with proper password hashing (e.g. bcrypt/argon2) — never ship this as-is.
+    authRoles: [
+      { id: 'student', label: 'Student', icon: 'gamepad-2' },
+      { id: 'teacher', label: 'Teacher', icon: 'presentation' },
+      { id: 'parent',  label: 'Parent',  icon: 'heart-handshake' }
+    ],
+    get account() {
+      return this.session ? this.accounts.find(a => a.username === this.session.username) || null : null;
+    },
+    demoHash(text) {
+      let h = 2166136261;
+      for (const ch of 'eduquest:' + text) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
+      return h.toString(36);
+    },
+    setAuthTab(tab) {
+      this.authTab = tab;
+      this.authError = '';
+      this.authForm.password = '';
+      this.authForm.confirm = '';
+      Sound.click();
+    },
+    register() {
+      const f = this.authForm, name = f.username.trim();
+      if (!/^[A-Za-z0-9_]{3,12}$/.test(name)) { this.authError = 'Username must be 3–12 letters, numbers, or _ (no spaces).'; return; }
+      if (this.accounts.some(a => a.username.toLowerCase() === name.toLowerCase())) { this.authError = 'That username is taken. Try another one!'; return; }
+      if (f.password.length < 4) { this.authError = 'Password needs at least 4 characters.'; return; }
+      if (f.password !== f.confirm) { this.authError = 'The two passwords don’t match.'; return; }
+      const acc = { username: name, role: f.role, avatar: f.avatar, pass: this.demoHash(f.password), created: Util.dayKey() };
+      this.accounts.push(acc);
+      Store.set('accounts', this.accounts);
+      this.startSession(acc, 'Welcome to EduQuest, ' + name + '! 🎉');
+    },
+    login() {
+      const f = this.authForm, name = f.username.trim();
+      const acc = this.accounts.find(a => a.username.toLowerCase() === name.toLowerCase());
+      if (!acc || acc.pass !== this.demoHash(f.password)) { this.authError = 'Wrong username or password.'; Sound.wrong(); return; }
+      this.startSession(acc, 'Welcome back, ' + acc.username + '! 👋');
+    },
+    startSession(acc, msg) {
+      this.session = { username: acc.username };
+      Store.set('session', this.session);
+      // Students: the account's nickname + avatar become their player profile
+      if (acc.role === 'student') {
+        this.student.nickname = acc.username.slice(0, 12);
+        this.student.avatar = acc.avatar;
+        this.saveStudent();
+      }
+      this.authForm = { username: '', password: '', confirm: '', role: 'student', avatar: this.data.avatarSeeds[0] };
+      this.authError = '';
+      Sound.pop();
+      this.toast(msg);
+      this.go('#/' + acc.role);
+    },
+    logout() {
+      this.session = null;
+      Store.set('session', null);
+      this.toast('You’re logged out. See you soon! 👋');
+      this.go('#/');
     },
 
     /* ======================= ASSIGNMENTS ============================ */

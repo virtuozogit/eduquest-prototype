@@ -1010,10 +1010,19 @@
             </div>
           </div>
 
-          <div class="quest-map mt-4">
+          <div class="quest-world mt-4" :class="'theme-' + s.id" :style="`--node:${s.color}`">
+          <!-- Candy-world scenery (decorative only) -->
+          <div class="quest-decor" aria-hidden="true">
+            <template x-for="(d, k) in mapDecor(s)" :key="k">
+              <span :style="`left:${d.x}%; top:${d.y}px; font-size:${d.size}rem; animation-delay:${d.delay}s; --tilt:${d.tilt}deg`" x-text="d.e"></span>
+            </template>
+          </div>
+          <div class="quest-map">
             <!-- .camel keeps the capital B: HTML would otherwise lowercase "viewBox" -->
             <svg class="path" x-bind:view-box.camel="`0 0 100 ${(s.quests.length + 1) * 112}`" preserveAspectRatio="none" :style="`height:${(s.quests.length + 1) * 112}px`" aria-hidden="true">
-              <path :d="questPath(s.quests.length)" fill="none" stroke="#C4B8F5" stroke-width="5" stroke-dasharray="2 12" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+              <path class="road-edge" :d="questPath(s.quests.length)" fill="none" stroke-width="30" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+              <path class="road" :d="questPath(s.quests.length)" fill="none" stroke-width="22" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+              <path class="road-candy" :d="questPath(s.quests.length)" fill="none" stroke-width="8" stroke-dasharray="1 16" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
             </svg>
             <template x-for="(q, i) in s.quests" :key="q.id">
               <div class="quest-step" :class="i % 2 ? 'quest-right' : 'quest-left'">
@@ -1034,7 +1043,8 @@
             <div class="quest-step">
               <div class="quest-node quest-trophy" :class="!hasBadge(s.id + '-star') && 'opacity-50'"><i data-lucide="trophy" class="w-9 h-9"></i></div>
             </div>
-            <p class="text-center text-sm font-bold text-slate-600 -mt-2" x-text="hasBadge(s.id + '-star') ? '🏆 ' + s.name + ' Star badge earned!' : 'Finish every quest to earn the ' + s.name + ' Star badge!'"></p>
+            <p class="quest-goal" x-text="hasBadge(s.id + '-star') ? '🏆 ' + s.name + ' Star badge earned!' : 'Finish every quest to earn the ' + s.name + ' Star badge!'"></p>
+          </div>
           </div>
         </div>
       </template>
