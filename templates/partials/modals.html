@@ -1,0 +1,285 @@
+<!-- ===================================================================
+     MODALS + TOAST
+     =================================================================== -->
+
+<!-- Break reminder (screen-time limit reached) -->
+<div class="modal" :class="{ 'modal-open': showBreak }" role="dialog" aria-modal="true" x-cloak>
+  <div class="modal-box text-center rounded-3xl">
+    <p class="text-6xl anim-float">🌿</p>
+    <h2 class="font-display text-3xl font-bold mt-2">Time for a break!</h2>
+    <p class="mt-2 text-slate-700">You learned for <b x-text="todayMinutes() || 1"></b> minute(s) today — great job! Your brain grows stronger when you rest, too.</p>
+    <div class="grid grid-cols-3 gap-2 mt-4 text-sm font-bold">
+      <div class="bg-sky-50 rounded-2xl p-3"><p class="text-2xl">🚰</p>Drink water</div>
+      <div class="bg-green-50 rounded-2xl p-3"><p class="text-2xl">🤸</p>Stretch</div>
+      <div class="bg-amber-50 rounded-2xl p-3"><p class="text-2xl">👀</p>Look far away</div>
+    </div>
+    <button class="btn btn-primary btn-lg btn-block mt-5 btn-3d" @click="takeBreak()">Okay, I’ll take a break!</button>
+    <button class="btn btn-ghost btn-sm mt-2" @click="parentExtend()">Parent: 5 more minutes</button>
+  </div>
+</div>
+
+<!-- Avatar + nickname picker -->
+<div class="modal" :class="{ 'modal-open': showAvatarModal }" role="dialog" aria-modal="true" x-cloak>
+  <div class="modal-box rounded-3xl">
+    <h2 class="font-display text-2xl font-bold">Choose your avatar</h2>
+    <div class="grid grid-cols-4 gap-3 mt-4">
+      <template x-for="seed in data.avatarSeeds" :key="seed">
+        <button @click="avatarDraft.avatar = seed; Sound.click()" class="rounded-full p-1 border-4" :class="avatarDraft.avatar===seed ? 'border-brand' : 'border-transparent'" :aria-label="'Avatar ' + seed">
+          <img :src="avatarUrl(seed)" class="w-full aspect-square rounded-full bg-slate-100" alt="">
+        </button>
+      </template>
+    </div>
+    <label class="form-control mt-4">
+      <span class="label-text font-bold mb-1">Nickname</span>
+      <input x-model="avatarDraft.nickname" maxlength="12" class="input input-bordered">
+      <span class="text-xs text-slate-500 mt-1">🛡️ Use a fun nickname — never your full real name.</span>
+    </label>
+    <div class="modal-action">
+      <button class="btn btn-ghost" @click="showAvatarModal=false">Cancel</button>
+      <button class="btn btn-primary" @click="saveAvatar()">Save</button>
+    </div>
+  </div>
+  <div class="modal-backdrop" @click="showAvatarModal=false"></div>
+</div>
+
+<!-- Assign to class -->
+<div class="modal" :class="{ 'modal-open': !!assignDraft }" role="dialog" aria-modal="true" x-cloak>
+  <template x-if="assignDraft">
+    <div class="modal-box rounded-3xl">
+      <h2 class="font-display text-2xl font-bold">Assign to class</h2>
+      <p class="mt-1 text-slate-600"><b x-text="assignDraft.title"></b> → <span x-text="data.className"></span></p>
+      <label class="form-control mt-4">
+        <span class="label-text font-bold mb-1">Due date</span>
+        <input type="date" x-model="assignDraft.due" :min="Util.dayKey(0)" class="input input-bordered">
+      </label>
+      <p class="text-xs text-slate-500 mt-2">It will appear on every student’s home screen.</p>
+      <div class="modal-action">
+        <button class="btn btn-ghost" @click="assignDraft=null">Cancel</button>
+        <button class="btn btn-primary" @click="saveAssignment()">Assign</button>
+      </div>
+    </div>
+  </template>
+  <div class="modal-backdrop" @click="assignDraft=null"></div>
+</div>
+
+<!-- Preview a quest's questions -->
+<div class="modal" :class="{ 'modal-open': !!previewQuiz }" role="dialog" aria-modal="true" x-cloak>
+  <template x-if="previewQuiz">
+    <div class="modal-box rounded-3xl max-w-2xl">
+      <h2 class="font-display text-2xl font-bold" x-text="previewQuiz.title"></h2>
+      <p class="text-sm text-slate-600" x-text="(previewQuiz.custom ? 'Teacher-made · ' : '') + previewQuiz.questions.length + ' questions'"></p>
+      <ol class="mt-4 space-y-3">
+        <template x-for="(q, i) in previewQuiz.questions" :key="i">
+          <li class="rounded-xl bg-slate-50 p-3">
+            <p class="font-bold"><span x-text="(i + 1) + '. ' + q.question"></span> <span class="badge badge-sm capitalize" x-text="q.difficulty"></span></p>
+            <ul class="mt-1 text-sm grid sm:grid-cols-2 gap-x-4">
+              <template x-for="(c, ci) in q.choices" :key="ci"><li :class="ci===q.answer ? 'text-green-700 font-extrabold' : 'text-slate-600'" x-text="(ci===q.answer ? '✓ ' : '• ') + c"></li></template>
+            </ul>
+            <p class="text-xs text-slate-500 mt-1" x-text="'💡 ' + q.explain"></p>
+          </li>
+        </template>
+      </ol>
+      <div class="modal-action"><button class="btn" @click="previewQuiz=null">Close</button></div>
+    </div>
+  </template>
+  <div class="modal-backdrop" @click="previewQuiz=null"></div>
+</div>
+
+<!-- Reset demo confirmation -->
+<div class="modal" :class="{ 'modal-open': showResetModal }" role="dialog" aria-modal="true" x-cloak>
+  <div class="modal-box rounded-3xl">
+    <h2 class="font-display text-2xl font-bold">Reset the demo?</h2>
+    <p class="mt-2 text-slate-700">This deletes all saved progress, assignments, custom quizzes, and settings in this browser, and restores the starting demo data.</p>
+    <div class="modal-action">
+      <button class="btn btn-ghost" @click="showResetModal=false">Cancel</button>
+      <button class="btn btn-error" @click="resetDemo()">Reset everything</button>
+    </div>
+  </div>
+  <div class="modal-backdrop" @click="showResetModal=false"></div>
+</div>
+
+<!-- Weekly Streak & 7-Day Progress Modal -->
+<!-- Weekly Streak & 7-Day Progress Modal (Mobile-friendly bottom sheet on phones, centered on desktop) -->
+<div class="modal modal-bottom sm:modal-middle" :class="{ 'modal-open': showStreakModal }" role="dialog" aria-modal="true" x-cloak>
+  <div class="modal-box rounded-t-3xl sm:rounded-3xl p-0 overflow-hidden max-w-md bg-white">
+
+    <!-- Purple Header -->
+    <div class="bg-gradient-to-br from-[#5B3FD9] to-[#7C5CFF] px-5 pt-4 pb-5 text-white">
+      <!-- Mobile drag indicator -->
+      <div class="sm:hidden w-10 h-1.5 rounded-full bg-white/30 mx-auto mb-3"></div>
+
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <span class="inline-flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wide">
+            📅 Past 6 Days + Today
+          </span>
+          <h2 class="font-display text-2xl font-bold mt-1">Weekly Progress</h2>
+          <p class="text-xs sm:text-sm text-white/90 font-semibold">
+            You’re on a <span class="text-sun font-extrabold" x-text="streakCount() + '-day streak'"></span>, <span x-text="student.nickname"></span>!
+          </p>
+        </div>
+        <button type="button" @click="showStreakModal = false" aria-label="Close weekly progress"
+                class="btn btn-circle btn-sm bg-white/15 hover:bg-white/25 border-0 text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Weekly Totals Strip -->
+      <div class="grid grid-cols-3 gap-2 mt-4 text-center" x-data="{ sum: weeklySummary() }">
+        <div class="bg-white/15 rounded-2xl py-2 px-1">
+          <p class="text-[11px] text-white/80 font-bold">Active Days</p>
+          <p class="font-display text-lg font-bold" x-text="sum.activeDays + ' / 7'"></p>
+        </div>
+        <div class="bg-white/15 rounded-2xl py-2 px-1">
+          <p class="text-[11px] text-white/80 font-bold">Weekly XP</p>
+          <p class="font-display text-lg font-bold text-sun" x-text="'+' + fmt(sum.totalXp)"></p>
+        </div>
+        <div class="bg-white/15 rounded-2xl py-2 px-1">
+          <p class="text-[11px] text-white/80 font-bold">Study Time</p>
+          <p class="font-display text-lg font-bold" x-text="sum.totalMinutes + 'm'"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive Body -->
+    <div class="p-5 space-y-4">
+      <!-- 7-Day Interactive Selector -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-extrabold uppercase tracking-wider text-slate-400">7-Day Activity</span>
+          <span class="text-xs font-bold text-brand">Tap a day for details</span>
+        </div>
+
+        <div class="grid grid-cols-7 gap-1 sm:gap-1.5">
+          <template x-for="d in weeklyProgressDays()" :key="d.key">
+            <button type="button"
+                    @click="Sound.click(); selectedWeekDay = d.index"
+                    class="flex flex-col items-center py-2 px-0.5 rounded-2xl border transition-all active:scale-95 cursor-pointer"
+                    :class="selectedWeekDay === d.index ? 'bg-brand-light border-brand ring-2 ring-brand/20' : 'bg-white border-slate-200 hover:border-slate-300'">
+              <span class="text-[10px] font-extrabold" :class="d.isToday ? 'text-brand' : 'text-slate-500'" x-text="d.label"></span>
+              <div class="w-8 h-8 rounded-full grid place-items-center text-xs font-extrabold my-1"
+                   :class="d.active ? (d.streakDay ? 'bg-orange-500 text-white' : 'bg-emerald-500 text-white') : 'bg-slate-100 text-slate-400 border border-dashed border-slate-300'"
+                   x-text="d.active ? (d.streakDay ? '🔥' : '✓') : '–'"></div>
+              <span class="text-[10px] font-bold" :class="d.active ? 'text-slate-800' : 'text-slate-400'" x-text="d.minutes + 'm'"></span>
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Selected Day Breakdown Card -->
+      <template x-if="selectedWeekDayObj()">
+        <div class="rounded-2xl bg-slate-50 border border-slate-200/80 p-3.5" x-data="{ day: selectedWeekDayObj() }">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <p class="text-[11px] font-bold text-slate-400" x-text="day.dateLabel"></p>
+              <p class="font-display font-bold text-base text-slate-900" x-text="day.isToday ? 'Today’s Activity' : day.label + '’s Activity'"></p>
+            </div>
+            <span class="badge border-0 font-extrabold text-xs"
+                  :class="day.active ? (day.streakDay ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700') : 'bg-slate-200 text-slate-600'"
+                  x-text="day.active ? (day.streakDay ? '🔥 Active Streak' : '✓ Completed') : 'Rest Day'"></span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 mt-2.5">
+            <div class="bg-white rounded-xl p-2 border border-slate-200/70 flex items-center gap-2">
+              <span class="text-base">⚡</span>
+              <div>
+                <p class="text-[10px] font-bold uppercase text-slate-400">Earned</p>
+                <p class="text-xs font-extrabold text-slate-900" x-text="'+' + day.xp + ' XP'"></p>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl p-2 border border-slate-200/70 flex items-center gap-2">
+              <span class="text-base">⏱️</span>
+              <div>
+                <p class="text-[10px] font-bold uppercase text-slate-400">Study Time</p>
+                <p class="text-xs font-extrabold text-slate-900" x-text="day.minutes + ' mins'"></p>
+              </div>
+            </div>
+          </div>
+
+          <div x-show="day.quests.length" class="mt-2.5 pt-2.5 border-t border-slate-200/80 flex flex-wrap gap-1.5">
+            <template x-for="qName in day.quests" :key="qName">
+              <span class="text-[11px] font-bold bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-lg" x-text="'⭐ ' + qName"></span>
+            </template>
+          </div>
+          <p x-show="!day.quests.length" class="mt-2 text-xs text-slate-500">No quests played on this day — every explorer needs a break!</p>
+        </div>
+      </template>
+
+      <!-- Today's Daily Goal Progress -->
+      <div class="rounded-2xl bg-amber-50 border border-amber-200/80 p-3 flex items-center gap-3">
+        <span class="text-2xl">🎯</span>
+        <div class="flex-1 min-w-0">
+          <div class="flex justify-between text-xs font-extrabold text-slate-800 mb-1">
+            <span>Today’s Daily Goal</span>
+            <span class="text-amber-700" x-text="Math.min(15, weeklyProgressDays()[6].minutes) + ' / 15 min'"></span>
+          </div>
+          <progress class="progress progress-warning w-full h-2" :value="Math.min(15, weeklyProgressDays()[6].minutes)" max="15"></progress>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-primary btn-block btn-3d font-display text-base" @click="showStreakModal = false">
+        Keep Going, <span x-text="student.nickname"></span>! 🚀
+      </button>
+    </div>
+  </div>
+  <div class="modal-backdrop" @click="showStreakModal = false"></div>
+</div>
+
+<!-- Stars & Subject Progression Path Modal -->
+<div class="modal" :class="{ 'modal-open': showStarsModal }" role="dialog" aria-modal="true" x-cloak>
+  <div class="modal-box rounded-3xl max-w-lg">
+    <div class="flex items-center gap-3">
+      <span class="text-4xl">⭐</span>
+      <div>
+        <h2 class="font-display text-2xl font-bold" x-text="totalStars() + ' / ' + maxPossibleStars() + ' Stars'"></h2>
+        <p class="text-xs text-slate-600 font-bold">Tap any quest node to jump straight into that path</p>
+      </div>
+    </div>
+
+    <div class="mt-4 space-y-4">
+      <template x-for="s in data.subjects" :key="s.id">
+        <div class="rounded-2xl bg-slate-50 p-3.5 border border-slate-100">
+          <div class="flex items-center justify-between mb-2">
+            <p class="font-display font-bold flex items-center gap-1.5" :style="`color:${s.color}`">
+              <span x-text="s.emoji"></span>
+              <span x-text="s.name"></span>
+            </p>
+            <span class="text-xs font-extrabold text-slate-600"
+                  x-text="subjectStars(s) + ' / ' + (s.quests.length * 3) + ' ⭐'"></span>
+          </div>
+
+          <!-- Horizontal progression path per subject -->
+          <div class="flex items-start justify-between gap-1 relative">
+            <template x-for="(q, i) in s.quests" :key="q.id">
+              <button type="button"
+                      @click="showStarsModal = false; openQuest(s, i)"
+                      class="flex-1 flex flex-col items-center text-center group cursor-pointer">
+                <div class="w-10 h-10 rounded-full grid place-items-center text-white font-display font-bold text-sm shadow transition group-hover:scale-105"
+                     :class="questStatus(s, i) === 'locked' ? '!bg-slate-300 !text-slate-500' : (questStatus(s, i) === 'completed' ? 'ring-2 ring-sun' : '')"
+                     :style="`background:${s.color}`">
+                  <span x-text="questStatus(s, i) === 'locked' ? '🔒' : (i + 1)"></span>
+                </div>
+                <p class="text-[11px] font-extrabold mt-1 leading-tight line-clamp-1" x-text="q.short"></p>
+                <p class="text-[10px] leading-none mt-0.5">
+                  <template x-for="n in 3" :key="n">
+                    <span :class="n <= questStars(q.id) ? '' : 'opacity-20 grayscale'">⭐</span>
+                  </template>
+                </p>
+              </button>
+            </template>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <div class="modal-action">
+      <button class="btn btn-primary btn-block" @click="showStarsModal = false">Close</button>
+    </div>
+  </div>
+  <div class="modal-backdrop" @click="showStarsModal = false"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast toast-top toast-center z-[60]" x-show="toastMsg" x-transition x-cloak>
+  <div class="alert bg-neutral text-neutral-content shadow-lg font-bold"><span x-text="toastMsg"></span></div>
+</div>

@@ -1,0 +1,123 @@
+<!-- ===================================================================
+     PARENT VIEW
+     =================================================================== -->
+<template x-if="role==='parent'">
+  <div class="min-h-screen bg-slate-50" x-cloak>
+    <header class="sticky top-0 z-20 bg-white border-b border-slate-200">
+      <div class="max-w-5xl mx-auto h-14 px-4 flex items-center gap-2">
+        <span x-html="logo('w-8 h-8')"></span>
+        <p class="font-display font-bold text-xl text-brand">EduQuest</p>
+        <span class="badge bg-orange-100 text-orange-800 border-0 font-bold">Parent</span>
+        <a href="#/" class="btn btn-ghost btn-sm ml-auto"><i data-lucide="repeat" class="w-4 h-4"></i> <span class="hidden sm:inline">Switch role</span></a>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto p-4 lg:p-8 space-y-5">
+      <!-- Child card -->
+      <section class="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+        <img :src="avatarUrl(student.avatar)" class="w-20 h-20 rounded-full bg-slate-100" alt="Child's cartoon avatar">
+        <div class="flex-1">
+          <h1 class="font-display text-2xl font-bold" x-text="student.nickname + '’s progress'"></h1>
+          <p class="text-slate-600 font-bold" x-text="'Grade 4 · Level ' + level() + ' · 🔥 ' + streakCount() + '-day streak'"></p>
+          <p class="mt-1 text-sm text-green-700 font-bold flex items-center gap-1"><i data-lucide="shield-check" class="w-4 h-4"></i> Parental consent given (demo) · Account uses a nickname only</p>
+        </div>
+        <a href="#/student" class="btn btn-outline btn-sm">Open child’s view</a>
+      </section>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="bg-white rounded-2xl p-4 border border-slate-200"><p class="text-sm text-slate-600 font-bold">Time this week</p><p class="font-display text-3xl font-bold" x-text="weekMinutes().reduce((s, d) => s + d.minutes, 0) + ' min'"></p></div>
+        <div class="bg-white rounded-2xl p-4 border border-slate-200"><p class="text-sm text-slate-600 font-bold">Quests completed</p><p class="font-display text-3xl font-bold" x-text="Object.keys(student.quests).filter(id => !id.startsWith('custom')).length + ' / ' + allQuests().length"></p></div>
+        <div class="bg-white rounded-2xl p-4 border border-slate-200"><p class="text-sm text-slate-600 font-bold">Average best score</p><p class="font-display text-3xl font-bold" x-text="Math.round(Util.avg(Object.values(student.quests).map(p => p.bestAccuracy))) + '%'"></p></div>
+        <div class="bg-white rounded-2xl p-4 border border-slate-200"><p class="text-sm text-slate-600 font-bold">Badges earned</p><p class="font-display text-3xl font-bold" x-text="student.badges.length"></p></div>
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-4">
+        <section class="bg-white rounded-2xl border border-slate-200 p-4 lg:col-span-2">
+          <h2 class="font-bold">Learning time this week</h2>
+          <p class="text-xs text-slate-500">Minutes spent on student screens per day</p>
+          <div class="h-60 mt-3"><canvas id="chart-week" role="img" aria-label="Bar chart of learning minutes per day this week"></canvas></div>
+        </section>
+
+        <!-- Screen-time limit -->
+        <section class="bg-white rounded-2xl border border-slate-200 p-4">
+          <h2 class="font-bold flex items-center gap-2"><i data-lucide="alarm-clock" class="w-5 h-5"></i> Daily screen-time limit</h2>
+          <p class="text-xs text-slate-500 mt-1">When the limit is reached, your child sees a friendly “Time for a break!” reminder.</p>
+          <select x-model="settings.limitMin" class="select select-bordered w-full mt-3" aria-label="Daily limit">
+            <option value="0">Off</option>
+            <option value="1">1 minute (for the demo)</option>
+            <option value="15">15 minutes</option>
+            <option value="30">30 minutes</option>
+            <option value="45">45 minutes</option>
+            <option value="60">60 minutes</option>
+          </select>
+          <div class="mt-3 text-sm">
+            <p class="font-bold" x-text="'Today: ' + todayMinutes() + ' min' + (Number(settings.limitMin) ? ' of ' + settings.limitMin + ' min' : '')"></p>
+            <progress x-show="Number(settings.limitMin)" class="progress progress-warning w-full" :value="Math.min(todaySeconds(), settings.limitMin * 60)" :max="settings.limitMin * 60"></progress>
+          </div>
+          <div class="flex gap-2 mt-3">
+            <button class="btn btn-primary btn-sm" @click="saveSettings()">Save</button>
+            <button class="btn btn-ghost btn-sm" @click="resetTodayTime()">Reset today (demo)</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-4">
+        <!-- Subjects -->
+        <section class="bg-white rounded-2xl border border-slate-200 p-4">
+          <h2 class="font-bold">Subjects</h2>
+          <div class="mt-3 space-y-3">
+            <template x-for="row in childSubjectStatus()" :key="row.subject.id">
+              <div class="rounded-xl bg-slate-50 p-3">
+                <div class="flex items-center gap-2">
+                  <span class="text-xl" x-text="row.subject.emoji"></span>
+                  <p class="font-bold flex-1" x-text="row.subject.name + (row.avg != null ? ' · ' + row.avg + '%' : '')"></p>
+                  <span class="badge border-0 font-bold gap-1"
+                        :class="{ 'bg-green-100 text-green-800': row.status==='up', 'bg-amber-100 text-amber-800': row.status==='help', 'bg-sky-100 text-sky-800': row.status==='ok', 'bg-slate-200 text-slate-700': row.status==='none' }"
+                        x-text="({ up: '📈 ', help: '🤝 ', ok: '✓ ', none: '• ' })[row.status] + row.label"></span>
+                </div>
+                <p class="text-sm text-slate-600 mt-1" x-text="row.tip"></p>
+              </div>
+            </template>
+          </div>
+        </section>
+
+        <!-- Recent badges -->
+        <section class="bg-white rounded-2xl border border-slate-200 p-4">
+          <h2 class="font-bold">Recent badges</h2>
+          <div class="grid grid-cols-2 gap-2 mt-3">
+            <template x-for="id in student.badges.slice().reverse().slice(0, 4)" :key="id">
+              <div class="flex items-center gap-2 rounded-xl bg-amber-50 p-3">
+                <span class="text-3xl" x-text="badge(id).emoji"></span>
+                <div><p class="font-bold text-sm" x-text="badge(id).name"></p><p class="text-xs text-slate-600" x-text="badge(id).desc"></p></div>
+              </div>
+            </template>
+          </div>
+        </section>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-4">
+        <!-- Privacy (RA 10173 data-subject rights) -->
+        <section class="bg-white rounded-2xl border border-slate-200 p-4">
+          <h2 class="font-bold flex items-center gap-2"><i data-lucide="lock" class="w-5 h-5"></i> Privacy &amp; your child’s data</h2>
+          <ul class="text-sm text-slate-700 mt-2 space-y-1">
+            <li>• Under the Data Privacy Act (RA 10173), you can access, correct, or delete your child’s data.</li>
+            <li>• We never sell student data and never show ads to children.</li>
+            <li>• No location, photos, or real names are collected.</li>
+          </ul>
+          <div class="flex flex-wrap gap-2 mt-3">
+            <button class="btn btn-sm btn-outline" @click="exportChildData()"><i data-lucide="download" class="w-4 h-4"></i> Download data</button>
+            <button class="btn btn-sm btn-ghost text-rose-700" @click="showResetModal=true"><i data-lucide="trash-2" class="w-4 h-4"></i> Delete data</button>
+          </div>
+        </section>
+
+        <!-- Plan (shown to parents only — never to kids) -->
+        <section class="bg-white rounded-2xl border border-slate-200 p-4">
+          <h2 class="font-bold flex items-center gap-2"><i data-lucide="sparkles" class="w-5 h-5"></i> Your plan</h2>
+          <p class="text-sm mt-2"><span class="badge bg-green-100 text-green-800 border-0 font-bold">Free plan</span> Core challenges in every subject.</p>
+          <p class="text-sm text-slate-700 mt-2">A Premium Family plan (more subjects and levels) is planned. Pricing is still being finalized. Purchase options appear only in this parent area, never in your child’s screens.</p>
+        </section>
+      </div>
+    </main>
+  </div>
+</template>

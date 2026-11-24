@@ -11,17 +11,28 @@ Sample content: **Grade 4 · Mathematics, Science, English** (10 quests, 90 ques
 
 ## Run it locally
 
-No install, no build step. Pick one:
+`index.html` is pre-built, so you can run the prototype right away:
 
 1. **Double-click `index.html`.** It opens in your browser.
 2. *(Optional)* Run a local server from this folder: `python -m http.server 8000`, then open <http://localhost:8000>.
 
 You need an internet connection the first time, because the libraries, fonts, and avatars load from CDNs.
 
+### Building HTML after editing templates
+
+The HTML screens are split into Jinja2 templates inside `templates/`. Whenever you edit `templates/index.base.html` or any file in `templates/partials/`, rebuild `index.html` before previewing or pushing:
+
+```bash
+pip install jinja2   # one-time setup
+python3 build.py     # compiles templates/ into index.html
+```
+
 ## Deploy to GitHub Pages
 
+> **Important:** Always run `python3 build.py` and commit the updated `index.html` before pushing, since GitHub Pages serves the compiled `index.html` directly.
+
 1. Create a new **public** repository on GitHub, for example `eduquest-prototype`.
-2. Upload every file in this folder **with the same structure** (`index.html`, `css/`, `js/`, `README.md`):
+2. Upload every file in this folder **with the same structure** (`index.html`, `build.py`, `templates/`, `css/`, `js/`, `README.md`):
    - **On the website:** *Add file → Upload files*, drag the files and folders in, then *Commit changes*.
    - **With git:**
      ```bash
@@ -87,21 +98,30 @@ Cartoon avatars (DiceBear) and nicknames only · no ads, no purchases shown to k
 ## Files (for teammates)
 
 ```
-index.html        every screen (look for the big ===== comment headers)
-css/style.css     theme colors, answer buttons, quest map, heatmap, animations
-js/data.js        ALL content: subjects, quests, lessons, questions, badges, 20 fake classmates
-js/store.js       localStorage helpers, "Reset demo", the demo student's starting progress
-js/sound.js       generated beep sound effects (Web Audio API) + confetti helpers
-js/quiz.js        challenge engine: scoring, adaptive rules, badges
-js/dashboard.js   teacher + parent data and Chart.js charts
-js/live.js        Host Live Game, bots, BroadcastChannel two-tab play
-js/battle.js      BattleQuest: monsters, weapons + loot tables, combo/critical-hit fight loop
-js/party.js       BattleQuest with classmates: Team Raid (co-op boss) and Duel (1-vs-1)
-js/app.js         Alpine app: routing (#/student, #/teacher/…), screen time, assignments, quiz builder
+build.py                     compiles templates/ into index.html (run after editing HTML templates)
+index.html                   generated output containing every screen (do not edit directly)
+templates/
+  index.base.html            base shell: <head>, landing role picker, footer, script imports
+  partials/
+    student.html             all Student screens (Home, Quest Map, Lesson, Challenge, BattleQuest, Results, Badges, Live)
+    teacher.html             all Teacher screens (Dashboard, Heatmap, Library, Quiz Builder, Host Live Game)
+    parent.html              Parent dashboard, screen-time controls, and privacy settings
+    modals.html              all modals (Break, Avatar, Assign, Preview, Reset, Weekly Streak, Stars Path) + toast
+css/style.css                theme colors, answer buttons, quest map, heatmap, animations
+js/data.js                   ALL content: subjects, quests, lessons, questions, badges, 20 fake classmates
+js/store.js                  localStorage helpers, "Reset demo", the demo student's starting progress
+js/sound.js                  generated beep sound effects (Web Audio API) + confetti helpers
+js/quiz.js                   challenge engine: scoring, adaptive rules, badges
+js/dashboard.js              teacher + parent data and Chart.js charts
+js/live.js                   Host Live Game, bots, BroadcastChannel two-tab play
+js/battle.js                 BattleQuest: monsters, weapons + loot tables, combo/critical-hit fight loop
+js/party.js                  BattleQuest with classmates: Team Raid (co-op boss) and Duel (1-vs-1)
+js/app.js                    Alpine app: routing (#/student, #/teacher/…), screen time, assignments, quiz builder
 ```
 
 **Common edits**
 
+- **Edit HTML or UI layout:** edit the matching file in `templates/` (e.g. `templates/partials/student.html`), then run `python3 build.py` to regenerate `index.html`.
 - **Add or change a question:** in `js/data.js`, copy a line like
   `Q('easy', 'Question?', ['A', 'B', 'C', 'D'], 1, 'Why B is right.')`
   The `1` is the index of the correct choice (0 = first).
