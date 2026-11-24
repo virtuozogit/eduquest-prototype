@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en" data-theme="eduquest">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EduQuest — Learning that feels like a game</title>
+  <meta name="description" content="EduQuest prototype: a gamified learning platform for Filipino elementary students (Grade 4 sample content).">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%235B3FD9'/%3E%3Cpolygon points='32,9 34.2,14.9 40.6,15.2 35.6,19.2 37.3,25.3 32,21.8 26.7,25.3 28.4,19.2 23.4,15.2 29.8,14.9' fill='%23FBBF24'/%3E%3Cpath d='M12 32q10-4 19 1v19q-9-5-19-1z' fill='%23fff'/%3E%3Cpath d='M52 32q-10-4-19 1v19q9-5 19-1z' fill='%23E0DBFB'/%3E%3C/svg%3E">
+
+  <!-- Fonts: Fredoka (playful headings) + Nunito (friendly body text) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- DaisyUI components + Tailwind CSS (Play CDN, no build step) -->
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com/3.4.5"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Nunito', 'system-ui', 'sans-serif'],
+            display: ['Fredoka', 'Nunito', 'system-ui', 'sans-serif']
+          },
+          colors: { brand: { DEFAULT: '#5B3FD9', dark: '#46289F', light: '#EEEBFD' }, sun: '#FBBF24' }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Alpine.js runs after the page (and our scripts at the bottom) load -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</head>
+
+<body x-data="app()" class="min-h-screen font-sans text-base-content">
+
+<!-- ===================================================================
+     LANDING / ROLE PICKER
+     =================================================================== -->
+<template x-if="screen==='landing'">
+  <div class="landing min-h-screen" x-cloak>
+    <div class="max-w-5xl mx-auto w-full px-4 py-10 sm:py-16">
+      <div class="text-center">
+        <span class="inline-block anim-float" x-html="logo('w-20 h-20 drop-shadow-lg')"></span>
+        <h1 class="font-display text-5xl sm:text-6xl font-bold text-brand mt-3">EduQuest</h1>
+        <p class="text-lg sm:text-2xl mt-2 font-extrabold">Learning that feels like a game, not a task.</p>
+        <p class="text-sm text-slate-600 mt-2">Grade 4 prototype · Mathematics · Science · English · DepEd MATATAG-aligned sample content</p>
+      </div>
+
+      <h2 class="sr-only">Choose your role</h2>
+      <div class="grid sm:grid-cols-3 gap-4 mt-10">
+        <a href="#/student" class="role-card bg-gradient-to-br from-[#5B3FD9] to-[#7C5CFF]" @click="Sound.click()">
+          <span class="bg-white/20 rounded-2xl p-3"><i data-lucide="gamepad-2" class="w-8 h-8"></i></span>
+          <span class="font-display text-2xl font-bold">I’m a Student</span>
+          <span class="text-white/90 font-semibold">Play quests, earn XP, stars, and badges</span>
+        </a>
+        <a href="#/teacher" class="role-card bg-gradient-to-br from-[#0F766E] to-[#14B8A6]" @click="Sound.click()">
+          <span class="bg-white/20 rounded-2xl p-3"><i data-lucide="presentation" class="w-8 h-8"></i></span>
+          <span class="font-display text-2xl font-bold">I’m a Teacher</span>
+          <span class="text-white/90 font-semibold">Class dashboard, mastery heatmap, live games</span>
+        </a>
+        <a href="#/parent" class="role-card bg-gradient-to-br from-[#C2410C] to-[#F97316]" @click="Sound.click()">
+          <span class="bg-white/20 rounded-2xl p-3"><i data-lucide="heart-handshake" class="w-8 h-8"></i></span>
+          <span class="font-display text-2xl font-bold">I’m a Parent</span>
+          <span class="text-white/90 font-semibold">Progress, screen time, and privacy controls</span>
+        </a>
+      </div>
+
+      <!-- Child-safety promises from our business plan -->
+      <h2 class="font-display text-xl font-bold text-center mt-12">Safe by design 🛡️</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+        <div class="bg-white rounded-2xl p-4 flex gap-3 items-start shadow-sm">
+          <span class="text-brand"><i data-lucide="smile" class="w-6 h-6"></i></span>
+          <p class="text-sm"><b>Cartoon avatars &amp; nicknames only.</b> No real photos or personal data.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-4 flex gap-3 items-start shadow-sm">
+          <span class="text-brand"><i data-lucide="ban" class="w-6 h-6"></i></span>
+          <p class="text-sm"><b>No ads, no “buy coins.”</b> Kids never see purchase prompts.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-4 flex gap-3 items-start shadow-sm">
+          <span class="text-brand"><i data-lucide="alarm-clock" class="w-6 h-6"></i></span>
+          <p class="text-sm"><b>Break reminders.</b> Parents set a daily screen-time limit.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-4 flex gap-3 items-start shadow-sm">
+          <span class="text-brand"><i data-lucide="heart" class="w-6 h-6"></i></span>
+          <p class="text-sm"><b>Encouraging feedback.</b> Mistakes are explained, never shamed.</p>
+        </div>
+      </div>
+
+      <p class="text-center text-xs text-slate-600 mt-10">A prototype by <b>EduTech Innovators</b> — Silverio (CEO) · Aglugub (CTO) · Rey (CFO) · Villegas (PM) · Perez (BA)</p>
+    </div>
+  </div>
+</template>
+
+{% include 'partials/student.html' %}
+
+{% include 'partials/teacher.html' %}
+
+{% include 'partials/parent.html' %}
+
+<!-- ===================================================================
+     FOOTER (all screens except the challenge)
+     =================================================================== -->
+<footer x-show="screen!=='student-play'" class="text-xs text-center text-slate-600 px-4 pt-6 space-y-1"
+        :class="role==='student' ? 'pb-24' : (role==='teacher' ? 'pb-20 lg:pb-6 lg:pl-64 bg-slate-50' : (role==='parent' ? 'pb-6 bg-slate-50' : 'pb-6'))">
+  <p class="font-bold">Content aligned with the DepEd MATATAG curriculum (sample content). Not endorsed by DepEd.</p>
+  <p>Privacy: this prototype collects no personal data. Progress is saved only in this browser, in line with the Data Privacy Act of 2012 (RA 10173). No ads. No in-app purchases.</p>
+  <p>EduQuest prototype · EduTech Innovators · <button class="link font-bold" @click="showResetModal=true">Reset demo</button></p>
+</footer>
+
+{% include 'partials/modals.html' %}
+
+<!-- ===================================================================
+     LIBRARIES (CDN) + OUR SCRIPTS (order matters: data → store → … → app)
+     =================================================================== -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/quiz.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/live.js"></script>
+<script src="js/battle.js"></script>
+<script src="js/party.js"></script>
+<script src="js/app.js"></script>
+<script src="js/testscript.js"></script>
+</body>
+</html>

@@ -44,6 +44,9 @@ function app() {
     showBreak: false,
     breakSnoozeUntil: 0,
     showAvatarModal: false,
+    showStreakModal: false,
+    selectedWeekDay: 6, // 0 = 6 days ago, 6 = Today
+    showStarsModal: false,
     showResetModal: false,
     avatarDraft: { nickname: '', avatar: '' },
     libraryFilter: 'all',
@@ -51,6 +54,7 @@ function app() {
     previewQuiz: null,
     assignDraft: null,     // { quizId, title, due }
     builder: null,
+    
 
     init() {
       Sound.setEnabled(this.settings.sound);
@@ -168,6 +172,95 @@ function app() {
 
     openPlayerTab() { window.open(location.href.split('#')[0] + '#/student/join', '_blank'); },
     totalStars() { return Object.values(this.student.quests).reduce((s, p) => s + (p.stars || 0), 0); },
+
+    openWeeklyModal() {
+      Sound.click();
+      this.selectedWeekDay = 6; // Default selection to Today
+      this.showStreakModal = true;
+    },
+
+    // Past 6 days + today (syncs with student.time & student.quests, with demo fallback)
+    weeklyProgressDays() {
+      const demoDays = [
+        { minutes: 22, xp: 55, quests: ['Number Patterns'] },
+        { minutes: 0,  xp: 0,  quests: [] },
+        { minutes: 25, xp: 60, quests: ['States of Matter', 'Nouns'] },
+        { minutes: 0,  xp: 0,  quests: [] },
+        { minutes: 15, xp: 40, quests: ['Action Verbs'] },
+        { minutes: 18, xp: 45, quests: ['Plant Life Cycle'] },
+        { minutes: 20, xp: 45, quests: ['Fractions Intro'] }
+      ];
+
+      const hasRealTime = Object.keys(this.student.time || {}).length > 0;
+      const questList = this.allQuests();
+      const rawWeek = this.weekMinutes(); // [6 days ago ... today]
+
+      // Determine trailing consecutive active days for streak flame icons
+      const activeFlags = rawWeek.map((d, i) => {
+        const mins = d.minutes || (!hasRealTime ? demoDays[i].minutes : 0);
+        return mins > 0;
+      });
+      let trailingStreak = 0;
+      for (let i = activeFlags.length - 1; i >= 0; i--) {
+        if (activeFlags[i]) trailingStreak++;
+        else if (i < activeFlags.length - 1) break;
+      }
+
+      return rawWeek.map((d, i) => {
+        const isToday = i === 6;
+        const mins = d.minutes || (!hasRealTime ? demoDays[i].minutes : 0);
+        const playedToday = questList
+          .filter(q => this.student.quests[q.id]?.lastPlayed === d.key)
+          .map(q => q.short || q.title);
+
+        const quests = playedToday.length
+          ? playedToday
+          : (!hasRealTime ? demoDays[i].quests : []);
+
+        const xp = d.minutes > 0
+          ? Math.max(15, d.minutes * 2 + quests.length * 15)
+          : (!hasRealTime ? demoDays[i].xp : 0);
+
+        const streakStartIdx = activeFlags.length - trailingStreak;
+        const streakDay = mins > 0 && i >= streakStartIdx;
+
+        return {
+          index: i,
+          key: d.key,
+          label: isToday ? 'Today' : d.label,
+          dateLabel: Util.shortDate(d.key),
+          minutes: mins,
+          xp,
+          quests,
+          active: mins > 0,
+          streakDay,
+          isToday
+        };
+      });
+    },
+
+    selectedWeekDayObj() {
+      const days = this.weeklyProgressDays();
+      return days[this.selectedWeekDay] || days[6];
+    },
+
+    weeklySummary() {
+      const days = this.weeklyProgressDays();
+      return {
+        activeDays: days.filter(d => d.active).length,
+        totalXp: days.reduce((s, d) => s + d.xp, 0),
+        totalMinutes: days.reduce((s, d) => s + d.minutes, 0),
+        totalQuests: days.reduce((s, d) => s + d.quests.length, 0)
+      };
+    },
+
+    // Star totals per subject and overall (3 stars max per quest)
+    subjectStars(subject) {
+      return subject.quests.reduce((sum, q) => sum + this.questStars(q.id), 0);
+    },
+    maxPossibleStars() {
+      return this.allQuests().length * 3;
+    },
 
     /* ============================ HELPERS ============================ */
     avatarUrl(seed) { return 'https://api.dicebear.com/9.x/big-smile/svg?radius=50&backgroundColor=c0aede,d1d4f9,ffd5dc,ffdfbf,b6e3f4&seed=' + encodeURIComponent(seed || 'EduQuest'); },
